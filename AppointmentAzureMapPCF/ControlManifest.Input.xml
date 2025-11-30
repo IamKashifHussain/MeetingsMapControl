@@ -1,35 +1,26 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest>
   <control 
-    namespace="AppointmentAzureMap" 
-    constructor="AppointmentAzureMapPCF" 
-    version="0.0.1" 
-    display-name-key="Appointment Azure Map" 
-    description-key="Displays appointments on Azure Maps with location pins for current user (key from ti_mapconfiguration)" 
-    control-type="react" >
-    
-    <external-service-usage enabled="true">
-      <domain>atlas.microsoft.com</domain>
-    </external-service-usage>
+    namespace="AppointmentAzureMap"
+    constructor="AppointmentAzureMapPCF"
+    version="0.0.2"
+    display-name-key="Appointment Azure Map"
+    description-key="Displays appointments on Azure Maps"
+    control-type="standard">
 
-    <data-set name="appointments" display-name-key="Appointments" description-key="Dataset of appointments to display on map">
-      <property-set name="subject" display-name-key="Subject" of-type="SingleLine.Text" usage="bound" required="true" />
-      <property-set name="scheduledstart" display-name-key="Start Time" of-type="DateAndTime.DateAndTime" usage="bound" required="true" />
-      <property-set name="scheduledend" display-name-key="End Time" of-type="DateAndTime.DateAndTime" usage="bound" required="true" />
-      <property-set name="location" display-name-key="Location" of-type="SingleLine.Text" usage="bound" required="false" />
-      <property-set name="regardingobjectid" display-name-key="Regarding" of-type="Lookup.Simple" usage="bound" required="false" />
-      <property-set name="description" display-name-key="Description" of-type="Multiple" usage="bound" required="false" />
-      <property-set name="ownerid" display-name-key="Owner" of-type="Lookup.Simple" usage="bound" required="false" />
-    </data-set>
-
-    <!-- Azure Maps subscription key parameter - REMOVED (fetched from ti_mapconfiguration) -->
-    <!-- <property name="azureMapsKey" display-name-key="Azure Maps Key" description-key="Your Azure Maps subscription key" of-type="SingleLine.Text" usage="input" required="true" /> -->
-
+    <!-- Resources -->
     <resources>
-      <code path="index.ts" order="1"/>
-      <css path="css/AppointmentAzureMapPCF.css" order="1" />
+      <code path="index.ts" order="1" />
+      <css path="css/AppointmentAzureMapPCF.css" order="2" />
     </resources>
 
+    <!-- Dataset -->
+    <data-set 
+      name="appointments"
+      display-name-key="Appointment_Display_Key">
+    </data-set>
+
+    <!-- WebAPI usage -->
     <feature-usage>
       <uses-feature name="WebAPI" required="true" />
     </feature-usage>

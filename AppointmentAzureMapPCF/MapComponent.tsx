@@ -1,16 +1,19 @@
+// MapComponent.tsx
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
 import { IInputs } from "./generated/ManifestTypes";
-import { AppointmentRecord } from "./types";
+import { AppointmentRecord, DueFilter, FilterOptions } from "./types";
 
 interface MapComponentProps {
   appointments: AppointmentRecord[];
+  allAppointmentsCount: number;
   azureMapsKey: string;
   context: ComponentFramework.Context<IInputs>;
   currentUserName: string;
-  totalAppointments: number;
-  filteredAppointments: number;
+  currentFilter: FilterOptions;
+  onFilterChange: (filter: FilterOptions) => void;
+  onRefresh: () => void;
 }
 
 type GeocodeCache = Record<string, atlas.data.Position | null>;
@@ -22,11 +25,13 @@ interface MarkerInfo {
 
 const MapComponent: React.FC<MapComponentProps> = ({ 
   appointments, 
+  allAppointmentsCount,
   azureMapsKey, 
   context,
   currentUserName,
-  totalAppointments,
-  filteredAppointments 
+  currentFilter,
+  onFilterChange,
+  onRefresh,
 }) => {
   const mapRef = React.useRef<HTMLDivElement>(null);
   const mapInstanceRef = React.useRef<atlas.Map | null>(null);
@@ -35,6 +40,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const markersRef = React.useRef<MarkerInfo[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
+  const [searchText, setSearchText] = React.useState<string>(currentFilter.searchText || "");
 
   React.useEffect(() => {
     if (!mapRef.current) {
@@ -57,8 +63,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [azureMapsKey]);
 
   React.useEffect(() => {
-    if (mapInstanceRef.current && popupRef.current) {
-      updateMarkers();
+    if (mapInstanceRef.current && popupRef.current && !isLoading) {
+      void updateMarkers();
     }
   }, [appointments]);
 
@@ -190,7 +196,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     try {
       const entityType = regardingobjectid.etn.toLowerCase();
-      // Handle both string and object formats for entity ID
       const entityId = typeof regardingobjectid.id === 'string' 
         ? regardingobjectid.id 
         : regardingobjectid.id.guid;
@@ -329,6 +334,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     if (!map || !popup) return;
 
+    // Clear existing markers
     markersRef.current.forEach(markerInfo => {
       map.markers.remove(markerInfo.marker);
     });
@@ -340,6 +346,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     for (const appt of appointments) {
       let address: string | null | undefined = appt.location;
 
+      // If no location, try to get address from regarding
       if (!address && appt.regardingobjectid) {
         address = await fetchRegardingAddress(appt.regardingobjectid);
       }
@@ -377,6 +384,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       markerCount++;
     }
 
+    // Fit map to show all markers
     if (positions.length > 0) {
       const bounds = atlas.data.BoundingBox.fromPositions(positions);
       map.setCamera({
@@ -384,40 +392,144 @@ const MapComponent: React.FC<MapComponentProps> = ({
         padding: 80,
         maxZoom: 15,
       });
-    } else {
-      console.warn("No appointments could be mapped");
     }
+  };
+
+  const handleDueFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onFilterChange({
+      dueFilter: e.target.value as DueFilter,
+      searchText: searchText,
+    });
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newSearchText = e.target.value;
+    setSearchText(newSearchText);
+    
+    // Debounce search
+    const timeoutId = setTimeout(() => {
+      onFilterChange({
+        dueFilter: currentFilter.dueFilter,
+        searchText: newSearchText,
+      });
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  const handleRefreshClick = () => {
+    onRefresh();
   };
 
   return (
     <div style={{ width: "100%", height: "100%", position: "relative", minHeight: "500px" }}>
-      {/* User info banner */}
+      {/* Filter Controls Bar */}
       <div
         style={{
           position: "absolute",
           top: "10px",
           left: "10px",
-          background: "rgba(255, 255, 255, 0.95)",
+          right: "10px",
+          background: "rgba(255, 255, 255, 0.97)",
           padding: "12px 16px",
           borderRadius: "6px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           zIndex: 1000,
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+          display: "flex",
+          gap: "12px",
+          alignItems: "center",
+          flexWrap: "wrap",
         }}
       >
-        <div style={{ fontSize: "12px", color: "#666", marginBottom: "4px" }}>
-          Showing appointments for
+        {/* User Info */}
+        <div style={{ flex: "0 0 auto" }}>
+          <div style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>
+            Showing appointments for
+          </div>
+          <div style={{ fontSize: "14px", fontWeight: "600", color: "#0078d4" }}>
+            👤 {currentUserName}
+          </div>
         </div>
-        <div style={{ fontSize: "14px", fontWeight: "600", color: "#0078d4" }}>
-          👤 {currentUserName}
+
+        {/* Due Filter */}
+        <div style={{ flex: "0 0 auto", minWidth: "180px" }}>
+          <label style={{ fontSize: "11px", color: "#666", display: "block", marginBottom: "4px" }}>
+            Due
+          </label>
+          <select
+            value={currentFilter.dueFilter}
+            onChange={handleDueFilterChange}
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              fontSize: "13px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+              backgroundColor: "white",
+              cursor: "pointer",
+            }}
+          >
+            <option value="all">All</option>
+            <option value="overdue">Overdue</option>
+            <option value="today">Today or earlier</option>
+            <option value="tomorrow">Tomorrow or earlier</option>
+            <option value="next7days">Next 7 days or earlier</option>
+            <option value="next30days">Next 30 days or earlier</option>
+            <option value="next90days">Next 90 days or earlier</option>
+            <option value="next6months">Next 6 months or earlier</option>
+            <option value="next12months">Next 12 months or earlier</option>
+          </select>
         </div>
-        <div style={{ fontSize: "11px", color: "#888", marginTop: "4px" }}>
-          {filteredAppointments} of {totalAppointments} total appointments
+
+        {/* Search */}
+        <div style={{ flex: "1 1 auto", minWidth: "200px" }}>
+          <label style={{ fontSize: "11px", color: "#666", display: "block", marginBottom: "4px" }}>
+            Search
+          </label>
+          <input
+            type="text"
+            placeholder="Search appointments..."
+            value={searchText}
+            onChange={handleSearchChange}
+            style={{
+              width: "100%",
+              padding: "6px 8px",
+              fontSize: "13px",
+              border: "1px solid #ccc",
+              borderRadius: "4px",
+            }}
+          />
+        </div>
+
+        {/* Actions */}
+        <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", gap: "8px" }}>
+          <button
+            onClick={handleRefreshClick}
+            style={{
+              padding: "6px 12px",
+              fontSize: "13px",
+              backgroundColor: "#0078d4",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
+              fontWeight: "600",
+            }}
+          >
+            🔄 Refresh
+          </button>
+          
+          <div style={{ fontSize: "11px", color: "#888", paddingBottom: "6px" }}>
+            {appointments.length} of {allAppointmentsCount}
+          </div>
         </div>
       </div>
 
+      {/* Map Container */}
       <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
       
+      {/* Loading Indicator */}
       {isLoading && (
         <div
           style={{
@@ -448,6 +560,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       )}
 
+      {/* Error Message */}
       {errorMessage && (
         <div
           style={{
@@ -476,7 +589,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </div>
       )}
 
-      {!isLoading && !errorMessage && filteredAppointments === 0 && (
+      {/* No Results Message */}
+      {!isLoading && !errorMessage && appointments.length === 0 && (
         <div
           style={{
             position: "absolute",
@@ -497,15 +611,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
             No Appointments Found
           </h3>
           <p style={{ color: "#666", margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
-            You don't have any appointments to display on the map.
+            No appointments match the current filter criteria.
           </p>
-          {totalAppointments > 0 && (
+          {allAppointmentsCount > 0 && (
             <p style={{ color: "#888", margin: "10px 0 0 0", fontSize: "12px" }}>
-              ({totalAppointments} total appointments exist, but none are assigned to you)
+              ({allAppointmentsCount} total appointments available)
             </p>
           )}
         </div>
       )}
+
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
