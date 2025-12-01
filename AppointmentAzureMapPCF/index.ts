@@ -63,6 +63,8 @@ export class AppointmentAzureMapPCF
         this.azureMapsKey = configRecord.ti_azuremapskey ?? "";
         if (!this.azureMapsKey) {
           console.warn("Azure Maps key is empty in configuration record.");
+        } else {
+          console.log("✅ Azure Maps key loaded successfully");
         }
       } else {
         console.warn("No records found in ti_mapconfiguration table.");
@@ -80,6 +82,7 @@ export class AppointmentAzureMapPCF
     try {
       const currentUserId = context.userSettings.userId;
 
+      // ✅ FIXED: Includes regardingobjectid
       const fetchXml = `
         <fetch version="1.0" output-format="xml-platform" mapping="logical" distinct="false">
           <entity name="appointment">
@@ -106,18 +109,35 @@ export class AppointmentAzureMapPCF
         `?fetchXml=${encodedFetchXml}`
       );
 
+      console.log(`📊 Fetched ${result.entities.length} appointments`);
+
       this.allAppointments = result.entities.map((entity) => {
         let regardingRef: ComponentFramework.EntityReference | undefined;
+
+        // ✅ FIXED: Proper EntityReference construction with correct property name
         if (entity._regardingobjectid_value) {
+          // The property name for lookup logical name in FetchXML results
           const regardingType =
+            entity["_regardingobjectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] ||
             entity["regardingobjectid@Microsoft.Dynamics.CRM.lookuplogicalname"];
+          
+          const regardingName =
+            entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"];
+
+          console.log(
+            `   📌 Appointment "${entity.subject}": Regarding Type = "${regardingType}", ID = ${entity._regardingobjectid_value}, Name = "${regardingName}"`
+          );
+
+          // ✅ FIXED: Create proper EntityReference with id as object containing guid
           regardingRef = {
             id: { guid: entity._regardingobjectid_value },
             etn: regardingType || "",
-            name:
-              entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"] ||
-              ""
+            name: regardingName || "",
           } as ComponentFramework.EntityReference;
+        } else {
+          console.warn(
+            `   ⚠️  Appointment "${entity.subject}": NO regarding object found`
+          );
         }
 
         return {
@@ -133,6 +153,8 @@ export class AppointmentAzureMapPCF
           ownerId: currentUserId.toLowerCase()
         } as AppointmentRecord;
       });
+
+      console.log(`✅ Successfully mapped ${this.allAppointments.length} appointments`);
     } catch (error) {
       console.error("Error fetching appointments:", error);
       this.allAppointments = [];

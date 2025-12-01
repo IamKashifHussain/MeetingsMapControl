@@ -23,10 +23,10 @@ interface MarkerInfo {
   appointment: AppointmentRecord;
 }
 
-const MapComponent: React.FC<MapComponentProps> = ({ 
-  appointments, 
+const MapComponent: React.FC<MapComponentProps> = ({
+  appointments,
   allAppointmentsCount,
-  azureMapsKey, 
+  azureMapsKey,
   context,
   currentUserName,
   currentFilter,
@@ -40,7 +40,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const markersRef = React.useRef<MarkerInfo[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
-  const [searchText, setSearchText] = React.useState<string>(currentFilter.searchText || "");
+  const [searchText, setSearchText] = React.useState<string>(
+    currentFilter.searchText || ""
+  );
 
   React.useEffect(() => {
     if (!mapRef.current) {
@@ -73,9 +75,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       popupRef.current.close();
       popupRef.current = null;
     }
-    
+
     if (markersRef.current.length > 0) {
-      markersRef.current.forEach(markerInfo => {
+      markersRef.current.forEach((markerInfo) => {
         if (mapInstanceRef.current) {
           mapInstanceRef.current.markers.remove(markerInfo.marker);
         }
@@ -122,7 +124,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
             new atlas.control.CompassControl(),
             new atlas.control.PitchControl(),
             new atlas.control.StyleControl({
-              mapStyles: ["road", "satellite", "satellite_road_labels", "night", "road_shaded_relief"]
+              mapStyles: [
+                "road",
+                "satellite",
+                "satellite_road_labels",
+                "night",
+                "road_shaded_relief",
+              ],
             }),
           ],
           {
@@ -139,7 +147,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         setErrorMessage("Failed to load map");
         setIsLoading(false);
       });
-
     } catch (error) {
       console.error("Map initialization error:", error);
       setErrorMessage("Failed to initialize map");
@@ -147,16 +154,29 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  const geocodeAddress = async (address: string): Promise<atlas.data.Position | null> => {
-    if (!address || !address.trim()) return null;
+  const geocodeAddress = async (
+    address: string
+  ): Promise<atlas.data.Position | null> => {
+    if (!address || !address.trim()) {
+      console.warn("🔴 Geocoding: Empty address provided");
+      return null;
+    }
 
     const normalizedAddress = address.trim().toLowerCase();
 
+    // Check cache
     if (geocodeCacheRef.current[normalizedAddress] !== undefined) {
-      return geocodeCacheRef.current[normalizedAddress];
+      const cachedResult = geocodeCacheRef.current[normalizedAddress];
+      console.log(
+        `✅ Geocoding: Cache hit for "${address}"`,
+        cachedResult ? `[${cachedResult}]` : "[No result cached]"
+      );
+      return cachedResult;
     }
 
     try {
+      console.log(`🔍 Geocoding: Attempting to geocode "${address}"`);
+
       const response = await fetch(
         `https://atlas.microsoft.com/search/address/json?api-version=1.0&subscription-key=${azureMapsKey}&query=${encodeURIComponent(
           address
@@ -164,24 +184,45 @@ const MapComponent: React.FC<MapComponentProps> = ({
       );
 
       if (!response.ok) {
-        throw new Error(`Geocoding failed: ${response.statusText}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log(`📡 Geocoding API Response for "${address}":`, data);
 
       if (data.results && data.results.length > 0) {
-        const position = new atlas.data.Position(
-          data.results[0].position.lon,
-          data.results[0].position.lat
+        const result = data.results[0];
+
+        // ✅ IMPROVED: Validate coordinates exist and are valid
+        if (
+          result.position &&
+          typeof result.position.lon === "number" &&
+          typeof result.position.lat === "number"
+        ) {
+          const lon = result.position.lon;
+          const lat = result.position.lat;
+          const position: atlas.data.Position = [lon, lat];
+          geocodeCacheRef.current[normalizedAddress] = position;
+          console.log(
+            `✅ Geocoding: SUCCESS for "${address}" → [${lon}, ${lat}]`
+          );
+          return position;
+        } else {
+          console.warn(
+            `⚠️  Geocoding: Invalid coordinates in result for "${address}"`,
+            result.position
+          );
+        }
+      } else {
+        console.warn(
+          `⚠️  Geocoding: No results found for address "${address}"`
         );
-        geocodeCacheRef.current[normalizedAddress] = position;
-        return position;
       }
 
       geocodeCacheRef.current[normalizedAddress] = null;
       return null;
     } catch (error) {
-      console.error("Geocoding error for address:", address, error);
+      console.error(`❌ Geocoding: Error for address "${address}"`, error);
       geocodeCacheRef.current[normalizedAddress] = null;
       return null;
     }
@@ -190,49 +231,100 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const fetchRegardingAddress = async (
     regardingobjectid: ComponentFramework.EntityReference
   ): Promise<string | null> => {
-    if (!regardingobjectid || !regardingobjectid.id || !regardingobjectid.etn) {
+    console.log("🔍 fetchRegardingAddress received:", {
+      regardingobjectid,
+      id: regardingobjectid?.id,
+      etn: regardingobjectid?.etn,
+      name: regardingobjectid?.name,
+    });
+
+    if (!regardingobjectid?.id || !regardingobjectid?.etn) {
+      console.warn("🔴 fetchRegardingAddress: Invalid regarding object", {
+        hasId: !!regardingobjectid?.id,
+        hasEtn: !!regardingobjectid?.etn,
+        regardingobjectid,
+      });
       return null;
     }
 
+    const entityType = regardingobjectid.etn.toLowerCase();
+
+    // Extract GUID from id (can be string or object with guid property)
+    let entityId: string;
+    if (typeof regardingobjectid.id === "string") {
+      entityId = regardingobjectid.id;
+    } else if (
+      regardingobjectid.id &&
+      typeof regardingobjectid.id === "object" &&
+      "guid" in regardingobjectid.id
+    ) {
+      entityId = (regardingobjectid.id as { guid: string }).guid;
+    } else {
+      console.error(
+        "   ❌ Invalid regardingobjectid.id format:",
+        regardingobjectid.id
+      );
+      return null;
+    }
+
+    console.log(
+      `📌 fetchRegardingAddress: Fetching ${entityType} (${entityId})`
+    );
+
     try {
-      const entityType = regardingobjectid.etn.toLowerCase();
-      const entityId = typeof regardingobjectid.id === 'string' 
-        ? regardingobjectid.id 
-        : regardingobjectid.id.guid;
-
-      let selectQuery = "";
-      if (entityType === "contact" || entityType === "account") {
-        selectQuery = "?$select=address1_composite,address1_line1,address1_city,address1_stateorprovince,address1_postalcode,address1_country";
-      } else if (entityType === "lead") {
-        selectQuery = "?$select=address1_composite,address1_line1,address1_city,address1_stateorprovince,address1_postalcode,address1_country";
-      } else {
-        return null;
+      // ✅ Contact and Account - get their composite address
+      if (["contact", "account"].includes(entityType)) {
+        console.log(`   → Retrieving ${entityType} record...`);
+        const record = await context.webAPI.retrieveRecord(
+          entityType,
+          entityId,
+          "?$select=address1_composite"
+        );
+        const address = record.address1_composite ?? null;
+        console.log(
+          `   ✅ ${entityType} retrieved. Address: ${address || "[EMPTY]"}`
+        );
+        return address;
       }
 
-      const record = await context.webAPI.retrieveRecord(entityType, entityId, selectQuery);
+      // ✅ Opportunity - get the parent Customer's (Account or Contact) composite address
+      if (entityType === "opportunity") {
+        console.log(`   → Retrieving opportunity with customer details...`);
+        const opp = await context.webAPI.retrieveRecord(
+          "opportunity",
+          entityId,
+          "?$select=_customerid_value&$expand=customerid_account($select=address1_composite),customerid_contact($select=address1_composite)"
+        );
 
-      if (record.address1_composite) {
-        return record.address1_composite;
+        console.log(`   📊 Opportunity data:`, JSON.stringify(opp, null, 2));
+
+        if (opp.customerid_account?.address1_composite) {
+          const address = opp.customerid_account.address1_composite;
+          console.log(`   ✅ Found Account with address: ${address}`);
+          return address;
+        } else if (opp.customerid_contact?.address1_composite) {
+          const address = opp.customerid_contact.address1_composite;
+          console.log(`   ✅ Found Contact with address: ${address}`);
+          return address;
+        } else {
+          console.warn(
+            `   ⚠️ Opportunity has no customer or customer has no address`
+          );
+          return null;
+        }
       }
 
-      const addressParts = [
-        record.address1_line1,
-        record.address1_city,
-        record.address1_stateorprovince,
-        record.address1_postalcode,
-        record.address1_country,
-      ].filter(Boolean);
-
-      return addressParts.length > 0 ? addressParts.join(", ") : null;
+      console.warn(`   ⚠️  Unknown entity type: ${entityType}`);
+      return null;
     } catch (error) {
-      console.error("Error fetching regarding address:", error);
+      console.error(`   ❌ Error fetching ${entityType} (${entityId}):`, error);
       return null;
     }
   };
 
   const formatDateTime = (date: Date): string => {
     if (!date) return "Not specified";
-    
+
     try {
       return new Intl.DateTimeFormat("en-US", {
         dateStyle: "medium",
@@ -250,7 +342,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       const durationMs = endDate.getTime() - startDate.getTime();
       const hours = Math.floor(durationMs / (1000 * 60 * 60));
       const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-      
+
       if (hours > 0) {
         return `${hours}h ${minutes}m`;
       }
@@ -277,11 +369,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
         <div style="margin-bottom: 10px; background: #f5f5f5; padding: 8px; border-radius: 4px;">
           <div style="margin-bottom: 6px;">
             <span style="color: #333; font-weight: 600;">📅 Start:</span> 
-            <span style="color: #555; margin-left: 5px;">${escapeHtml(startTime)}</span>
+            <span style="color: #555; margin-left: 5px;">${escapeHtml(
+              startTime
+            )}</span>
           </div>
           <div style="margin-bottom: 6px;">
             <span style="color: #333; font-weight: 600;">🕐 End:</span> 
-            <span style="color: #555; margin-left: 5px;">${escapeHtml(endTime)}</span>
+            <span style="color: #555; margin-left: 5px;">${escapeHtml(
+              endTime
+            )}</span>
           </div>
           <div>
             <span style="color: #333; font-weight: 600;">⏱️ Duration:</span> 
@@ -291,7 +387,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         <div style="margin-bottom: 8px;">
           <span style="color: #333; font-weight: 600;">📍 Location:</span> 
-          <div style="color: #555; margin-top: 4px; padding-left: 20px;">${escapeHtml(location)}</div>
+          <div style="color: #555; margin-top: 4px; padding-left: 20px;">${escapeHtml(
+            location
+          )}</div>
         </div>
 
         ${
@@ -299,7 +397,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
             ? `
         <div style="margin-bottom: 8px;">
           <span style="color: #333; font-weight: 600;">👤 Regarding:</span> 
-          <div style="color: #555; margin-top: 4px; padding-left: 20px;">${escapeHtml(regarding)}</div>
+          <div style="color: #555; margin-top: 4px; padding-left: 20px;">${escapeHtml(
+            regarding
+          )}</div>
         </div>
         `
             : ""
@@ -334,34 +434,53 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     if (!map || !popup) return;
 
+    console.log("\n🗺️  ========== UPDATING MARKERS ==========");
+    console.log(`📊 Processing ${appointments.length} appointments\n`);
+
     // Clear existing markers
-    markersRef.current.forEach(markerInfo => {
+    markersRef.current.forEach((markerInfo) => {
       map.markers.remove(markerInfo.marker);
     });
     markersRef.current = [];
 
     const positions: atlas.data.Position[] = [];
     let markerCount = 0;
+    let successCount = 0;
+    let failureCount = 0;
 
     for (const appt of appointments) {
-      let address: string | null | undefined = appt.location;
+      console.log(`\n📌 Appointment: "${appt.subject}" (ID: ${appt.id})`);
 
-      // If no location, try to get address from regarding
-      if (!address && appt.regardingobjectid) {
+      // ✅ CHANGED: Skip location field entirely, go directly to regarding address
+      let address: string | null = null;
+
+      if (appt.regardingobjectid) {
         address = await fetchRegardingAddress(appt.regardingobjectid);
+      } else {
+        console.warn(`   ⚠️  No regarding object found`);
       }
 
       if (!address) {
-        console.warn(`No address found for appointment: ${appt.subject}`);
+        console.warn(`   ❌ No address found for appointment: ${appt.subject}`);
+        failureCount++;
         continue;
       }
+
+      console.log(`   ✅ Address retrieved: "${address}"`);
 
       const position = await geocodeAddress(address);
 
       if (!position) {
-        console.warn(`Could not geocode address for appointment: ${appt.subject}`);
+        console.warn(
+          `   ❌ Could not geocode address for appointment: ${appt.subject}`
+        );
+        failureCount++;
         continue;
       }
+
+      console.log(
+        `   ✅ Geocoded successfully: [${position[0]}, ${position[1]}]`
+      );
 
       positions.push(position);
 
@@ -372,6 +491,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
 
       map.events.add("click", marker, () => {
+        popup.close();
         popup.setOptions({
           content: createPopupContent(appt),
           position: position,
@@ -382,10 +502,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
       map.markers.add(marker);
       markersRef.current.push({ marker, appointment: appt });
       markerCount++;
+      successCount++;
     }
 
     // Fit map to show all markers
     if (positions.length > 0) {
+      console.log(`\n📍 Fitting ${positions.length} markers on map\n`);
       const bounds = atlas.data.BoundingBox.fromPositions(positions);
       map.setCamera({
         bounds: bounds,
@@ -393,6 +515,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
         maxZoom: 15,
       });
     }
+
+    console.log("\n========== RESULTS ==========");
+    console.log(`✅ Success: ${successCount} appointments`);
+    console.log(`❌ Failed: ${failureCount} appointments`);
+    console.log(`📍 Markers placed: ${markerCount}`);
+    console.log("=============================\n");
   };
 
   const handleDueFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -405,7 +533,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSearchText = e.target.value;
     setSearchText(newSearchText);
-    
+
     // Debounce search
     const timeoutId = setTimeout(() => {
       onFilterChange({
@@ -422,7 +550,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   return (
-    <div style={{ width: "100%", height: "100%", position: "relative", minHeight: "500px" }}>
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        minHeight: "500px",
+      }}
+    >
       {/* Filter Controls Bar */}
       <div
         style={{
@@ -447,14 +582,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
           <div style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>
             Showing appointments for
           </div>
-          <div style={{ fontSize: "14px", fontWeight: "600", color: "#0078d4" }}>
+          <div
+            style={{ fontSize: "14px", fontWeight: "600", color: "#0078d4" }}
+          >
             👤 {currentUserName}
           </div>
         </div>
 
         {/* Due Filter */}
         <div style={{ flex: "0 0 auto", minWidth: "180px" }}>
-          <label style={{ fontSize: "11px", color: "#666", display: "block", marginBottom: "4px" }}>
+          <label
+            style={{
+              fontSize: "11px",
+              color: "#666",
+              display: "block",
+              marginBottom: "4px",
+            }}
+          >
             Due
           </label>
           <select
@@ -484,7 +628,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         {/* Search */}
         <div style={{ flex: "1 1 auto", minWidth: "200px" }}>
-          <label style={{ fontSize: "11px", color: "#666", display: "block", marginBottom: "4px" }}>
+          <label
+            style={{
+              fontSize: "11px",
+              color: "#666",
+              display: "block",
+              marginBottom: "4px",
+            }}
+          >
             Search
           </label>
           <input
@@ -503,7 +654,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
         </div>
 
         {/* Actions */}
-        <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", gap: "8px" }}>
+        <div
+          style={{
+            flex: "0 0 auto",
+            display: "flex",
+            alignItems: "flex-end",
+            gap: "8px",
+          }}
+        >
           <button
             onClick={handleRefreshClick}
             style={{
@@ -519,8 +677,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
           >
             🔄 Refresh
           </button>
-          
-          <div style={{ fontSize: "11px", color: "#888", paddingBottom: "6px" }}>
+
+          <div
+            style={{ fontSize: "11px", color: "#888", paddingBottom: "6px" }}
+          >
             {appointments.length} of {allAppointmentsCount}
           </div>
         </div>
@@ -528,7 +688,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       {/* Map Container */}
       <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
-      
+
       {/* Loading Indicator */}
       {isLoading && (
         <div
@@ -556,7 +716,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
               margin: "0 auto 15px",
             }}
           />
-          <p style={{ margin: 0, color: "#333", fontSize: "14px" }}>Loading your appointments...</p>
+          <p style={{ margin: 0, color: "#333", fontSize: "14px" }}>
+            Loading your appointments...
+          </p>
         </div>
       )}
 
@@ -577,14 +739,29 @@ const MapComponent: React.FC<MapComponentProps> = ({
             zIndex: 1000,
           }}
         >
-          <h3 style={{ color: "#d13438", marginTop: 0, marginBottom: "10px", fontSize: "18px" }}>
+          <h3
+            style={{
+              color: "#d13438",
+              marginTop: 0,
+              marginBottom: "10px",
+              fontSize: "18px",
+            }}
+          >
             ⚠️ Configuration Required
           </h3>
-          <p style={{ color: "#555", margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
+          <p
+            style={{
+              color: "#555",
+              margin: 0,
+              fontSize: "14px",
+              lineHeight: "1.5",
+            }}
+          >
             {errorMessage}
           </p>
           <p style={{ color: "#777", margin: "15px 0 0 0", fontSize: "12px" }}>
-            Please configure your Azure Maps subscription key in the control properties.
+            Please configure your Azure Maps subscription key in the control
+            properties.
           </p>
         </div>
       )}
@@ -607,14 +784,30 @@ const MapComponent: React.FC<MapComponentProps> = ({
           }}
         >
           <div style={{ fontSize: "48px", marginBottom: "15px" }}>📅</div>
-          <h3 style={{ color: "#333", marginTop: 0, marginBottom: "10px", fontSize: "18px" }}>
+          <h3
+            style={{
+              color: "#333",
+              marginTop: 0,
+              marginBottom: "10px",
+              fontSize: "18px",
+            }}
+          >
             No Appointments Found
           </h3>
-          <p style={{ color: "#666", margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
+          <p
+            style={{
+              color: "#666",
+              margin: 0,
+              fontSize: "14px",
+              lineHeight: "1.5",
+            }}
+          >
             No appointments match the current filter criteria.
           </p>
           {allAppointmentsCount > 0 && (
-            <p style={{ color: "#888", margin: "10px 0 0 0", fontSize: "12px" }}>
+            <p
+              style={{ color: "#888", margin: "10px 0 0 0", fontSize: "12px" }}
+            >
               ({allAppointmentsCount} total appointments available)
             </p>
           )}
