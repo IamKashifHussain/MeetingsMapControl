@@ -38,6 +38,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const popupRef = React.useRef<atlas.Popup | null>(null);
   const geocodeCacheRef = React.useRef<GeocodeCache>({});
   const markersRef = React.useRef<MarkerInfo[]>([]);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
   const [searchText, setSearchText] = React.useState<string>(
@@ -66,11 +67,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   React.useEffect(() => {
     if (mapInstanceRef.current && popupRef.current && !isLoading) {
+      abortControllerRef.current = new AbortController();
       void updateMarkers();
     }
+
+    return () => {
+      abortControllerRef.current?.abort();
+    };
   }, [appointments]);
 
   const cleanup = () => {
+    abortControllerRef.current?.abort();
+
     if (popupRef.current) {
       popupRef.current.close();
       popupRef.current = null;
@@ -143,7 +151,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
 
       map.events.add("error", (error) => {
-        // Only show error if we don't have valid markers
         if (markersRef.current.length === 0) {
           setErrorMessage("Failed to load map");
         }
@@ -172,7 +179,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       const response = await fetch(
         `https://atlas.microsoft.com/search/address/json?api-version=1.0&subscription-key=${azureMapsKey}&query=${encodeURIComponent(
           address
-        )}&limit=1`
+        )}&limit=1`,
+        { signal: abortControllerRef.current?.signal }
       );
 
       if (!response.ok) {
@@ -200,9 +208,40 @@ const MapComponent: React.FC<MapComponentProps> = ({
       geocodeCacheRef.current[normalizedAddress] = null;
       return null;
     } catch (error) {
-      geocodeCacheRef.current[normalizedAddress] = null;
+      if ((error as Error).name !== "AbortError") {
+        geocodeCacheRef.current[normalizedAddress] = null;
+      }
       return null;
     }
+  };
+
+  const batchGeocodeAddresses = async (
+    addresses: string[]
+  ): Promise<Map<string, atlas.data.Position | null>> => {
+    const results = new Map<string, atlas.data.Position | null>();
+    const batchSize = 5;
+    const delayMs = 100;
+
+    for (let i = 0; i < addresses.length; i += batchSize) {
+      if (abortControllerRef.current?.signal.aborted) {
+        break;
+      }
+
+      const batch = addresses.slice(i, i + batchSize);
+
+      await Promise.all(
+        batch.map(async (address) => {
+          const position = await geocodeAddress(address);
+          results.set(address, position);
+        })
+      );
+
+      if (i + batchSize < addresses.length) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+
+    return results;
   };
 
   const fetchRegardingAddress = async (
@@ -234,8 +273,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           entityId,
           "?$select=address1_composite"
         );
-        const address = record.address1_composite ?? null;
-        return address;
+        return record.address1_composite ?? null;
       }
 
       if (entityType === "opportunity") {
@@ -293,7 +331,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (appts.length === 0) return "<div>No appointment data</div>";
 
     const isSingleAppointment = appts.length === 1;
-    
+
     return `
       <div style="padding: 15px; min-width: 280px; max-width: 400px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
         ${
@@ -303,7 +341,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               </div>`
             : ""
         }
-        
+
         <div style="max-height: 400px; overflow-y: auto;">
           ${appts
             .map((appt, index) => {
@@ -318,18 +356,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   <h4 style="margin: 0 0 8px 0; color: #0078d4; font-size: 15px; font-weight: 600;">
                     ${escapeHtml(appt.subject)}
                   </h4>
-                  
+
                   <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 13px; margin-bottom: 8px;">
                     <div style="margin-bottom: 4px;">
-                      <span style="color: #333; font-weight: 600;">📅</span> 
+                      <span style="color: #333; font-weight: 600;">📅</span>
                       <span style="color: #555; margin-left: 5px;">${escapeHtml(startTime)}</span>
                     </div>
                     <div style="margin-bottom: 4px;">
-                      <span style="color: #333; font-weight: 600;">🕐</span> 
+                      <span style="color: #333; font-weight: 600;">🕐</span>
                       <span style="color: #555; margin-left: 5px;">${escapeHtml(endTime)}</span>
                     </div>
                     <div>
-                      <span style="color: #333; font-weight: 600;">⏱️</span> 
+                      <span style="color: #333; font-weight: 600;">⏱️</span>
                       <span style="color: #555; margin-left: 5px;">${duration}</span>
                     </div>
                   </div>
@@ -337,7 +375,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   ${
                     regarding
                       ? `<div style="margin-bottom: 6px; font-size: 13px;">
-                          <span style="color: #333; font-weight: 600;">👤 Regarding:</span> 
+                          <span style="color: #333; font-weight: 600;">👤 Regarding:</span>
                           <div style="color: #555; margin-top: 2px; padding-left: 20px;">${escapeHtml(regarding)}</div>
                         </div>`
                       : ""
@@ -377,44 +415,44 @@ const MapComponent: React.FC<MapComponentProps> = ({
     });
     markersRef.current = [];
 
-    const positions: atlas.data.Position[] = [];
-    const appointmentsByPosition: Record<string, AppointmentRecord[]> = {};
-    let markerCount = 0;
+    // Step 1: Collect all addresses in parallel
+    const addressPromises = appointments.map(async (appt) => {
+      if (!appt.regardingobjectid) return null;
+      const address = await fetchRegardingAddress(appt.regardingobjectid);
+      return { appt, address };
+    });
 
-    for (const appt of appointments) {
-      let address: string | null = null;
+    const addressResults = await Promise.all(addressPromises);
 
-      if (appt.regardingobjectid) {
-        address = await fetchRegardingAddress(appt.regardingobjectid);
+    if (abortControllerRef.current?.signal.aborted) return;
+
+    // Step 2: Group appointments by address
+    const addressMap = new Map<string, AppointmentRecord[]>();
+    for (const result of addressResults) {
+      if (result && result.address) {
+        if (!addressMap.has(result.address)) {
+          addressMap.set(result.address, []);
+        }
+        addressMap.get(result.address)!.push(result.appt);
       }
-
-      if (!address) {
-        continue;
-      }
-
-      const position = await geocodeAddress(address);
-
-      if (!position) {
-        continue;
-      }
-
-      const positionKey = `${position[0]},${position[1]}`;
-
-      if (!appointmentsByPosition[positionKey]) {
-        appointmentsByPosition[positionKey] = [];
-        positions.push(position);
-      }
-
-      appointmentsByPosition[positionKey].push(appt);
     }
 
-    // Create markers for unique positions
-    for (const positionKey in appointmentsByPosition) {
-      const appts = appointmentsByPosition[positionKey];
-      const position = positions.find(p => `${p[0]},${p[1]}` === positionKey);
+    // Step 3: Batch geocode unique addresses
+    const uniqueAddresses = Array.from(addressMap.keys());
+    const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
+
+    if (abortControllerRef.current?.signal.aborted) return;
+
+    // Step 4: Create markers
+    const positions: atlas.data.Position[] = [];
+    let markerCount = 0;
+
+    for (const [address, appts] of addressMap) {
+      const position = geocodeResults.get(address);
 
       if (!position) continue;
 
+      positions.push(position);
       markerCount++;
 
       const marker = new atlas.HtmlMarker({
@@ -482,12 +520,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         minHeight: "500px",
       }}
     >
-      {/* Filter Controls Bar - Above Map */}
+      {/* Filter Controls Bar */}
       <div
         style={{
           background: "rgba(255, 255, 255, 0.97)",
           padding: "12px 16px",
-          borderRadius: "0px",
           boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
           fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
           display: "flex",
@@ -498,28 +535,17 @@ const MapComponent: React.FC<MapComponentProps> = ({
           flexShrink: 0,
         }}
       >
-        {/* User Info */}
         <div style={{ flex: "0 0 auto" }}>
           <div style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>
             Showing appointments for
           </div>
-          <div
-            style={{ fontSize: "14px", fontWeight: "600", color: "#0078d4" }}
-          >
+          <div style={{ fontSize: "14px", fontWeight: "600", color: "#0078d4" }}>
             👤 {currentUserName}
           </div>
         </div>
 
-        {/* Due Filter */}
         <div style={{ flex: "0 0 auto", minWidth: "180px" }}>
-          <label
-            style={{
-              fontSize: "11px",
-              color: "#666",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
+          <label style={{ fontSize: "11px", color: "#666", display: "block", marginBottom: "4px" }}>
             Due
           </label>
           <select
@@ -547,16 +573,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
           </select>
         </div>
 
-        {/* Search */}
         <div style={{ flex: "1 1 auto", minWidth: "200px" }}>
-          <label
-            style={{
-              fontSize: "11px",
-              color: "#666",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
+          <label style={{ fontSize: "11px", color: "#666", display: "block", marginBottom: "4px" }}>
             Search
           </label>
           <input
@@ -574,15 +592,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           />
         </div>
 
-        {/* Actions */}
-        <div
-          style={{
-            flex: "0 0 auto",
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "8px",
-          }}
-        >
+        <div style={{ flex: "0 0 auto", display: "flex", alignItems: "flex-end", gap: "8px" }}>
           <button
             onClick={handleRefreshClick}
             style={{
@@ -598,21 +608,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
           >
             🔄 Refresh
           </button>
-
-          <div
-            style={{ fontSize: "11px", color: "#888", paddingBottom: "6px" }}
-          >
+          <div style={{ fontSize: "11px", color: "#888", paddingBottom: "6px" }}>
             {appointments.length} of {allAppointmentsCount}
           </div>
         </div>
       </div>
 
-      {/* Map Container - Flex grow to fill remaining space */}
+      {/* Map Container */}
       <div
         ref={mapRef}
         style={{ width: "100%", flex: "1", position: "relative", overflow: "hidden" }}
       >
-        {/* No Results Message - Inside Map */}
+        {/* No Results Message */}
         {!isLoading && !errorMessage && appointments.length === 0 && (
           <div
             style={{
@@ -633,125 +640,85 @@ const MapComponent: React.FC<MapComponentProps> = ({
             }}
           >
             <div style={{ fontSize: "36px", marginBottom: "12px", lineHeight: "1" }}>📅</div>
-            <h3
-              style={{
-                color: "#1a1a1a",
-                marginTop: 0,
-                marginBottom: "8px",
-                fontSize: "17px",
-                fontWeight: "700",
-                letterSpacing: "-0.2px",
-              }}
-            >
+            <h3 style={{ color: "#1a1a1a", marginTop: 0, marginBottom: "8px", fontSize: "17px", fontWeight: "700" }}>
               No Appointments Found
             </h3>
-            <p
-              style={{
-                color: "#666666",
-                margin: "10px 0 0 0",
-                fontSize: "13px",
-                lineHeight: "1.5",
-                fontWeight: "400",
-              }}
-            >
+            <p style={{ color: "#666666", margin: "10px 0 0 0", fontSize: "13px", lineHeight: "1.5" }}>
               {allAppointmentsCount === 0
                 ? "No appointments available."
                 : "No appointments match the current filter criteria."}
             </p>
             {allAppointmentsCount > 0 && (
-              <p
-                style={{ 
-                  color: "#999999", 
-                  margin: "8px 0 0 0", 
-                  fontSize: "12px",
-                  fontWeight: "400",
-                }}
-              >
+              <p style={{ color: "#999999", margin: "8px 0 0 0", fontSize: "12px" }}>
                 ({allAppointmentsCount} total appointments available)
               </p>
             )}
           </div>
         )}
-      </div>
 
-
-      {isLoading && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "rgba(255, 255, 255, 0.95)",
-            padding: "25px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-            textAlign: "center",
-            zIndex: 1000,
-          }}
-        >
+        {/* Loading Indicator */}
+        {isLoading && (
           <div
             style={{
-              border: "4px solid #f3f3f3",
-              borderTop: "4px solid #0078d4",
-              borderRadius: "50%",
-              width: "50px",
-              height: "50px",
-              animation: "spin 1s linear infinite",
-              margin: "0 auto 15px",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "rgba(255, 255, 255, 0.95)",
+              padding: "25px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              textAlign: "center",
+              zIndex: 1000,
             }}
-          />
-          <p style={{ margin: 0, color: "#333", fontSize: "14px" }}>
-            Loading your appointments...
-          </p>
-        </div>
-      )}
+          >
+            <div
+              style={{
+                border: "4px solid #f3f3f3",
+                borderTop: "4px solid #0078d4",
+                borderRadius: "50%",
+                width: "50px",
+                height: "50px",
+                animation: "spin 1s linear infinite",
+                margin: "0 auto 15px",
+              }}
+            />
+            <p style={{ margin: 0, color: "#333", fontSize: "14px" }}>
+              Loading your appointments...
+            </p>
+          </div>
+        )}
 
-      {/* Error Message */}
-      {errorMessage && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            background: "#fff",
-            padding: "25px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-            textAlign: "center",
-            maxWidth: "400px",
-            zIndex: 1000,
-          }}
-        >
-          <h3
+        {/* Error Message */}
+        {errorMessage && (
+          <div
             style={{
-              color: "#d13438",
-              marginTop: 0,
-              marginBottom: "10px",
-              fontSize: "18px",
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#fff",
+              padding: "25px",
+              borderRadius: "8px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              textAlign: "center",
+              maxWidth: "400px",
+              zIndex: 1000,
             }}
           >
-            ⚠️ Configuration Required
-          </h3>
-          <p
-            style={{
-              color: "#555",
-              margin: 0,
-              fontSize: "14px",
-              lineHeight: "1.5",
-            }}
-          >
-            {errorMessage}
-          </p>
-          <p style={{ color: "#777", margin: "15px 0 0 0", fontSize: "12px" }}>
-            Please configure your Azure Maps subscription key in the control
-            properties.
-          </p>
-        </div>
-      )}
-            
-      {/* CSS Animations */}
+            <h3 style={{ color: "#d13438", marginTop: 0, marginBottom: "10px", fontSize: "18px" }}>
+              ⚠️ Configuration Required
+            </h3>
+            <p style={{ color: "#555", margin: 0, fontSize: "14px", lineHeight: "1.5" }}>
+              {errorMessage}
+            </p>
+            <p style={{ color: "#777", margin: "15px 0 0 0", fontSize: "12px" }}>
+              Please configure your Azure Maps subscription key in the control properties.
+            </p>
+          </div>
+        )}
+      </div>
+
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
