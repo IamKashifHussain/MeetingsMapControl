@@ -1,4 +1,5 @@
 // Shared type definitions for the PCF control
+import { data } from "azure-maps-control";
 
 export interface AppointmentRecord {
   id: string;
@@ -26,4 +27,9 @@ export type DueFilter =
 export interface FilterOptions {
   dueFilter: DueFilter;
   searchText?: string;
+}
+
+export interface UserLocation {
+  address: string;
+  position: data.Position;
 }

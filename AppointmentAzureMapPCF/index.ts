@@ -20,6 +20,7 @@ export class AppointmentAzureMapPCF
     searchText: ""
   };
   private context: ComponentFramework.Context<IInputs>;
+  private currentUserAddress = "";
 
   public init(
     context: ComponentFramework.Context<IInputs>,
@@ -38,7 +39,10 @@ export class AppointmentAzureMapPCF
 
   private async initializeData(context: ComponentFramework.Context<IInputs>): Promise<void> {
     try {
-      await this.fetchAzureMapsKeyFromConfig(context);
+      await Promise.all([
+        this.fetchAzureMapsKeyFromConfig(context),
+        this.fetchCurrentUserAddress(context)
+      ]);
       await this.fetchUserAppointments(context);
       this.applyFilters();
     } catch (error) {
@@ -67,6 +71,30 @@ export class AppointmentAzureMapPCF
       this.isLoadingConfig = false;
     }
   }
+
+  private async fetchCurrentUserAddress(
+  context: ComponentFramework.Context<IInputs>
+): Promise<void> {
+  try {
+    const currentUserId = context.userSettings.userId.replace(/[{}]/g, '');
+    console.log("[User Fetch] Current user ID:", currentUserId);
+
+    const result = await context.webAPI.retrieveRecord(
+      "systemuser",
+      currentUserId,
+      "?$select=address1_composite"
+    );
+
+    console.log("[User Fetch] Retrieved user record:", result);
+
+    this.currentUserAddress = result.address1_composite ?? "";
+    console.log("[User Fetch] Extracted address1_composite:", this.currentUserAddress);
+  } catch (error) {
+    console.warn("[User Fetch] Failed to retrieve user address:", error);
+    this.currentUserAddress = "";
+  }
+}
+
 
   private async fetchUserAppointments(
     context: ComponentFramework.Context<IInputs>
@@ -220,7 +248,10 @@ export class AppointmentAzureMapPCF
   private handleRefresh = async (): Promise<void> => {
     this.isLoadingAppointments = true;
     this.renderComponent();
-    await this.fetchUserAppointments(this.context);
+    await Promise.all([
+      this.fetchUserAppointments(this.context),
+      this.fetchCurrentUserAddress(this.context)
+    ]);
     this.applyFilters();
     this.renderComponent();
   }
@@ -255,6 +286,7 @@ export class AppointmentAzureMapPCF
         azureMapsKey: this.azureMapsKey,
         context: this.context,
         currentUserName: this.context.userSettings.userName ?? "Current User",
+        currentUserAddress: this.currentUserAddress,
         currentFilter: this.currentFilter,
         onFilterChange: this.handleFilterChange,
         onRefresh: this.handleRefresh,
