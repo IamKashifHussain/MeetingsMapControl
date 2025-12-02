@@ -293,26 +293,44 @@ const MapComponent: React.FC<MapComponentProps> = ({
     address: string
   ): string => {
     return `
-      <div style="padding: 15px; min-width: 250px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 12px; margin: -15px -15px 12px -15px; border-radius: 4px 4px 0 0;">
-          <h3 style="margin: 0; font-size: 16px; font-weight: 600;">Your Location</h3>
-        </div>
-        
-        <div style="margin-bottom: 10px;">
-          <div style="color: #666; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; font-weight: 600;">User</div>
-          <div style="color: #333; font-size: 14px; font-weight: 500;">${escapeHtml(
-            userName
-          )}</div>
-        </div>
-        
-        <div>
-          <div style="color: #666; font-size: 11px; text-transform: uppercase; margin-bottom: 4px; font-weight: 600;">Address</div>
-          <div style="color: #555; font-size: 13px; line-height: 1.4;">${escapeHtml(
-            address
-          )}</div>
-        </div>
+    <div style="
+      padding: 16px;
+      min-width: 260px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: rgba(32, 32, 32, 0.95);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      color: #f1f1f1;
+      transition: transform 0.2s ease-in-out;
+    ">
+      
+      <div style="
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;margin-right:8px;" fill="#00d4ff" viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+        </svg>
+        <h3 style="margin:0; font-size: 16px; font-weight: 600; color:#00d4ff;">Your Location</h3>
       </div>
-    `;
+      
+      <div style="margin-bottom: 10px;">
+        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">User</div>
+        <div style="font-size: 14px; font-weight: 500; color: #fff;">${escapeHtml(
+          userName
+        )}</div>
+      </div>
+      
+      <div>
+        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">Address</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #ccc;">${escapeHtml(
+          address
+        )}</div>
+      </div> 
+    </div>
+  `;
   };
 
   const batchGeocodeAddresses = async (
@@ -433,82 +451,119 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const isSingleAppointment = appts.length === 1;
 
     return `
-      <div style="padding: 15px; min-width: 280px; max-width: 400px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-        ${
-          !isSingleAppointment
-            ? `<div style="background: #e7f3ff; border-left: 4px solid #0078d4; padding: 8px 12px; margin-bottom: 12px; border-radius: 4px;">
-                <span style="color: #0078d4; font-weight: 600; font-size: 12px;">📌 ${appts.length} appointments at this location</span>
-              </div>`
-            : ""
-        }
+    <div style="
+      padding: 16px;
+      min-width: 280px;
+      max-width: 420px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: rgba(32, 32, 32, 0.95);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      color: #f1f1f1;
+      overflow: hidden;
+    ">
+      ${
+        !isSingleAppointment
+          ? `<div style="
+              background: rgba(0, 120, 212, 0.15);
+              border-left: 4px solid #00d4ff;
+              padding: 10px 12px;
+              margin-bottom: 14px;
+              border-radius: 6px;
+              font-size: 12px;
+              font-weight: 600;
+              color: #00d4ff;
+            ">
+              📌 ${appts.length} appointments at this location
+            </div>`
+          : ""
+      }
 
-        <div style="max-height: 400px; overflow-y: auto;">
-          ${appts
-            .map((appt, index) => {
-              const startTime = formatDateTime(appt.scheduledstart);
-              const endTime = formatDateTime(appt.scheduledend);
-              const duration = calculateDuration(
-                appt.scheduledstart,
-                appt.scheduledend
-              );
-              const description =
-                appt.description || "No description available";
-              const regarding = appt.regardingobjectidname || "";
+      <div style="max-height: 400px; overflow-y: auto;">
+        ${appts
+          .map((appt, index) => {
+            const startTime = formatDateTime(appt.scheduledstart);
+            const endTime = formatDateTime(appt.scheduledend);
+            const duration = calculateDuration(
+              appt.scheduledstart,
+              appt.scheduledend
+            );
+            const description = appt.description || "No description available";
+            const regarding = appt.regardingobjectidname || "";
 
-              return `
-                <div style="margin-bottom: 12px; ${
+            return `
+              <div style="
+                margin-bottom: 16px;
+                ${
                   index > 0
-                    ? "border-top: 1px solid #e0e0e0; padding-top: 12px;"
+                    ? "border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;"
                     : ""
-                }">
-                  <h4 style="margin: 0 0 8px 0; color: #0078d4; font-size: 15px; font-weight: 600;">
-                    ${escapeHtml(appt.subject)}
-                  </h4>
+                }
+              ">
+                <h4 style="margin: 0 0 10px 0; color: #00d4ff; font-size: 16px; font-weight: 600;">
+                  ${escapeHtml(appt.subject)}
+                </h4>
 
-                  <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 13px; margin-bottom: 8px;">
-                    <div style="margin-bottom: 4px;">
-                      <span style="color: #333; font-weight: 600;">📅</span>
-                      <span style="color: #555; margin-left: 5px;">${escapeHtml(
-                        startTime
-                      )}</span>
-                    </div>
-                    <div style="margin-bottom: 4px;">
-                      <span style="color: #333; font-weight: 600;">🕐</span>
-                      <span style="color: #555; margin-left: 5px;">${escapeHtml(
-                        endTime
-                      )}</span>
-                    </div>
-                    <div>
-                      <span style="color: #333; font-weight: 600;">⏱️</span>
-                      <span style="color: #555; margin-left: 5px;">${duration}</span>
-                    </div>
+                <div style="
+                  background: rgba(255,255,255,0.05);
+                  padding: 10px;
+                  border-radius: 6px;
+                  font-size: 13px;
+                  margin-bottom: 10px;
+                  color: #e0e0e0;
+                ">
+                  <div style="margin-bottom: 4px;">
+                    <span style="font-weight: 600;">📅</span>
+                    <span style="margin-left: 6px;">${escapeHtml(
+                      startTime
+                    )}</span>
                   </div>
-
-                  ${
-                    regarding
-                      ? `<div style="margin-bottom: 6px; font-size: 13px;">
-                          <span style="color: #333; font-weight: 600;">👤 Regarding:</span>
-                          <div style="color: #555; margin-top: 2px; padding-left: 20px;">${escapeHtml(
-                            regarding
-                          )}</div>
-                        </div>`
-                      : ""
-                  }
-
-                  ${
-                    description && description !== "No description available"
-                      ? `<div style="font-size: 12px; color: #555; padding: 6px; background: #f9f9f9; border-radius: 4px; max-height: 80px; overflow-y: auto;">
-                          ${escapeHtml(description)}
-                        </div>`
-                      : ""
-                  }
+                  <div style="margin-bottom: 4px;">
+                    <span style="font-weight: 600;">🕐</span>
+                    <span style="margin-left: 6px;">${escapeHtml(
+                      endTime
+                    )}</span>
+                  </div>
+                  <div>
+                    <span style="font-weight: 600;">⏱️</span>
+                    <span style="margin-left: 6px;">${duration}</span>
+                  </div>
                 </div>
-              `;
-            })
-            .join("")}
-        </div>
+
+                ${
+                  regarding
+                    ? `<div style="margin-bottom: 8px; font-size: 13px;">
+                        <span style="font-weight: 600;">👤 Regarding:</span>
+                        <div style="margin-top: 2px; padding-left: 20px; color: #ccc;">${escapeHtml(
+                          regarding
+                        )}</div>
+                      </div>`
+                    : ""
+                }
+
+                ${
+                  description && description !== "No description available"
+                    ? `<div style="
+                        font-size: 12px;
+                        color: #ccc;
+                        padding: 8px;
+                        background: rgba(255,255,255,0.05);
+                        border-radius: 6px;
+                        max-height: 80px;
+                        overflow-y: auto;
+                      ">
+                        ${escapeHtml(description)}
+                      </div>`
+                    : ""
+                }
+              </div>
+            `;
+          })
+          .join("")}
       </div>
-    `;
+    </div>
+  `;
   };
 
   const escapeHtml = (text: string): string => {
@@ -738,15 +793,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
           <button
             onClick={handleRefreshClick}
             style={{
-              padding: "6px 12px",
+              padding: "6px 14px",
               fontSize: "13px",
-              backgroundColor: "#0078d4",
-              color: "white",
+              background: "linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)",
+              color: "#fff",
               border: "none",
-              borderRadius: "4px",
+              borderRadius: "6px",
               cursor: "pointer",
               fontWeight: "600",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
             }}
+            onMouseOver={(e) =>
+              (e.currentTarget.style.transform = "scale(1.05)")
+            }
+            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
             🔄 Refresh
           </button>
