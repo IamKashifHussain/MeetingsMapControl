@@ -1,7 +1,8 @@
-// MapComponent.tsx - PART 1: Initialization, State Management, and Core Methods
+// MapComponent.tsx - Refactored with external CSS
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
+import "./MapComponent.css";
 import { IInputs } from "./generated/ManifestTypes";
 import {
   AppointmentRecord,
@@ -62,7 +63,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [userLocation, setUserLocation] = React.useState<UserLocation | null>(
     null
   );
-  const showRoutes  = React.useState<boolean>(true);
   const [routeData, setRouteData] = React.useState<RouteResult | null>(null);
 
   // ============= Effects =============
@@ -160,7 +160,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       popupRef.current = popup;
 
       map.events.add("ready", async () => {
-        // Initialize route layer and data source
         const routeSource = new atlas.source.DataSource();
         map.sources.add(routeSource);
         routeSourceRef.current = routeSource;
@@ -424,45 +423,25 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   // ============= Popup Content Methods =============
-  const createUserPopupContent = (
-    userName: string,
-    address: string
-  ): string => {
+  const createUserPopupContent = (userName: string, address: string): string => {
     return `
-    <div style="
-      padding: 16px;
-      min-width: 260px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: rgba(32, 32, 32, 0.95);
-      backdrop-filter: blur(8px);
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      color: #f1f1f1;
-    ">
-      <div style="
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
-      ">
-        <svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;margin-right:8px;" fill="#00d4ff" viewBox="0 0 24 24">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
-        </svg>
-        <h3 style="margin:0; font-size: 16px; font-weight: 600; color:#00d4ff;">Your Location</h3>
+      <div class="user-popup-container">
+        <div class="user-popup-header">
+          <svg xmlns="http://www.w3.org/2000/svg" class="user-popup-icon" fill="#00d4ff" viewBox="0 0 24 24">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+          </svg>
+          <h3 class="user-popup-title">Your Location</h3>
+        </div>
+        <div class="user-popup-field">
+          <div class="user-popup-field-label">User</div>
+          <div class="user-popup-field-value">${escapeHtml(userName)}</div>
+        </div>
+        <div>
+          <div class="user-popup-field-label">Address</div>
+          <div class="user-popup-address">${escapeHtml(address)}</div>
+        </div>
       </div>
-      <div style="margin-bottom: 10px;">
-        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">User</div>
-        <div style="font-size: 14px; font-weight: 500; color: #fff;">${escapeHtml(
-          userName
-        )}</div>
-      </div>
-      <div>
-        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">Address</div>
-        <div style="font-size: 13px; line-height: 1.4; color: #ccc;">${escapeHtml(
-          address
-        )}</div>
-      </div> 
-    </div>
-  `;
+    `;
   };
 
   const createPopupContent = (appts: AppointmentRecord[]): string => {
@@ -471,123 +450,76 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const isSingleAppointment = appts.length === 1;
 
     return `
-    <div style="
-      padding: 16px;
-      min-width: 280px;
-      max-width: 420px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: rgba(32, 32, 32, 0.95);
-      backdrop-filter: blur(8px);
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      color: #f1f1f1;
-      overflow: hidden;
-    ">
-      ${
-        !isSingleAppointment
-          ? `<div style="
-              background: rgba(0, 120, 212, 0.15);
-              border-left: 4px solid #00d4ff;
-              padding: 10px 12px;
-              margin-bottom: 14px;
-              border-radius: 6px;
-              font-size: 12px;
-              font-weight: 600;
-              color: #00d4ff;
-            ">
-              📌 ${appts.length} appointments at this location
-            </div>`
-          : ""
-      }
+      <div class="appointment-popup-container">
+        ${
+          !isSingleAppointment
+            ? `<div class="appointment-popup-badge">
+                 📌 ${appts.length} appointments at this location
+               </div>`
+            : ""
+        }
+        <div class="appointment-popup-list">
+          ${appts
+            .map((appt, index) => {
+              const startTime = formatDateTime(appt.scheduledstart);
+              const endTime = formatDateTime(appt.scheduledend);
+              const duration = calculateDuration(
+                appt.scheduledstart,
+                appt.scheduledend
+              );
+              const description = appt.description || "No description available";
+              const regarding = appt.regardingobjectidname || "";
 
-      <div style="max-height: 400px; overflow-y: auto;">
-        ${appts
-          .map((appt, index) => {
-            const startTime = formatDateTime(appt.scheduledstart);
-            const endTime = formatDateTime(appt.scheduledend);
-            const duration = calculateDuration(
-              appt.scheduledstart,
-              appt.scheduledend
-            );
-            const description = appt.description || "No description available";
-            const regarding = appt.regardingobjectidname || "";
-
-            return `
-              <div style="
-                margin-bottom: 16px;
-                ${
-                  index > 0
-                    ? "border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;"
-                    : ""
-                }
-              ">
-                <h4 style="margin: 0 0 10px 0; color: #00d4ff; font-size: 16px; font-weight: 600;">
-                  ${escapeHtml(appt.subject)}
-                </h4>
-
-                <div style="
-                  background: rgba(255,255,255,0.05);
-                  padding: 10px;
-                  border-radius: 6px;
-                  font-size: 13px;
-                  margin-bottom: 10px;
-                  color: #e0e0e0;
-                ">
-                  <div style="margin-bottom: 4px;">
-                    <span style="font-weight: 600;">📅</span>
-                    <span style="margin-left: 6px;">${escapeHtml(
-                      startTime
-                    )}</span>
+              return `
+                <div class="appointment-popup-item ${
+                  index > 0 ? "appointment-popup-item-separator" : ""
+                }">
+                  <h4 class="appointment-popup-subject">${escapeHtml(
+                    appt.subject
+                  )}</h4>
+                  <div class="appointment-popup-details">
+                    <div class="appointment-popup-detail-row">
+                      <span class="appointment-popup-detail-icon">📅</span>
+                      <span class="appointment-popup-detail-text">${escapeHtml(
+                        startTime
+                      )}</span>
+                    </div>
+                    <div class="appointment-popup-detail-row">
+                      <span class="appointment-popup-detail-icon">🕐</span>
+                      <span class="appointment-popup-detail-text">${escapeHtml(
+                        endTime
+                      )}</span>
+                    </div>
+                    <div class="appointment-popup-detail-row">
+                      <span class="appointment-popup-detail-icon">⏱️</span>
+                      <span class="appointment-popup-detail-text">${duration}</span>
+                    </div>
                   </div>
-                  <div style="margin-bottom: 4px;">
-                    <span style="font-weight: 600;">🕐</span>
-                    <span style="margin-left: 6px;">${escapeHtml(
-                      endTime
-                    )}</span>
-                  </div>
-                  <div>
-                    <span style="font-weight: 600;">⏱️</span>
-                    <span style="margin-left: 6px;">${duration}</span>
-                  </div>
+                  ${
+                    regarding
+                      ? `<div class="appointment-popup-regarding">
+                           <span class="appointment-popup-regarding-label">👤 Regarding:</span>
+                           <div class="appointment-popup-regarding-value">${escapeHtml(
+                             regarding
+                           )}</div>
+                         </div>`
+                      : ""
+                  }
+                  ${
+                    description && description !== "No description available"
+                      ? `<div class="appointment-popup-description">
+                           ${escapeHtml(description)}
+                         </div>`
+                      : ""
+                  }
                 </div>
-
-                ${
-                  regarding
-                    ? `<div style="margin-bottom: 8px; font-size: 13px;">
-                        <span style="font-weight: 600;">👤 Regarding:</span>
-                        <div style="margin-top: 2px; padding-left: 20px; color: #ccc;">${escapeHtml(
-                          regarding
-                        )}</div>
-                      </div>`
-                    : ""
-                }
-
-                ${
-                  description && description !== "No description available"
-                    ? `<div style="
-                        font-size: 12px;
-                        color: #ccc;
-                        padding: 8px;
-                        background: rgba(255,255,255,0.05);
-                        border-radius: 6px;
-                        max-height: 80px;
-                        overflow-y: auto;
-                      ">
-                        ${escapeHtml(description)}
-                      </div>`
-                    : ""
-                }
-              </div>
-            `;
-          })
-          .join("")}
+              `;
+            })
+            .join("")}
+        </div>
       </div>
-    </div>
-  `;
+    `;
   };
-
-  // MapComponent.tsx - PART 2: Marker Updates, Route Calculations & UI Rendering
-  // This continues from Part 1 - Use inside the MapComponent functional component
 
   // ============= Marker Update Methods =============
   const updateMarkers = async () => {
@@ -601,7 +533,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     });
     markersRef.current = [];
 
-    // Step 1: Collect all addresses in parallel
     const addressPromises = appointments.map(async (appt) => {
       if (!appt.regardingobjectid) return null;
       const address = await fetchRegardingAddress(appt.regardingobjectid);
@@ -612,7 +543,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     if (abortControllerRef.current?.signal.aborted) return;
 
-    // Step 2: Group appointments by address
     const addressMap = new Map<string, AppointmentRecord[]>();
     for (const result of addressResults) {
       if (result && result.address) {
@@ -623,18 +553,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }
     }
 
-    // Step 3: Batch geocode unique addresses
     const uniqueAddresses = Array.from(addressMap.keys());
     const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
 
     if (abortControllerRef.current?.signal.aborted) return;
 
-    // Step 4: Create markers and build route points
     const positions: atlas.data.Position[] = [];
     let markerCount = 0;
     const routePoints: RoutePoint[] = [];
 
-    // Sort appointments chronologically
     const sortedAddresses = uniqueAddresses.sort((a, b) => {
       const apptA = addressMap.get(a)?.[0];
       const apptB = addressMap.get(b)?.[0];
@@ -678,12 +605,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    // Add user location to positions array if available
     if (userLocation?.position) {
       positions.push(userLocation.position);
     }
 
-    // Calculate and display routes automatically
     if (routePoints.length > 0 && userLocation?.position) {
       await calculateAndDisplayRoute(userLocation.position, routePoints);
     } else {
@@ -717,7 +642,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       if (result) {
         setRouteData(result);
 
-        // Create and display route feature
         const routeFeature = new atlas.data.Feature(
           new atlas.data.LineString(result.routeCoordinates),
           {
@@ -763,64 +687,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   // ============= Main Render =============
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "500px",
-      }}
-    >
+    <div className="map-component-container">
       {/* Filter Controls Bar */}
-      <div
-        style={{
-          background: "rgba(255, 255, 255, 0.97)",
-          padding: "12px 16px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-          display: "flex",
-          gap: "12px",
-          alignItems: "center",
-          flexWrap: "wrap",
-          borderBottom: "1px solid #e0e0e0",
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ flex: "0 0 auto" }}>
-          <div style={{ fontSize: "11px", color: "#666", marginBottom: "4px" }}>
-            Showing appointments for
-          </div>
-          <div
-            style={{ fontSize: "14px", fontWeight: "600", color: "#0078d4" }}
-          >
-            👤 {currentUserName}
-          </div>
+      <div className="filter-controls-bar">
+        <div className="user-info-section">
+          <div className="user-info-label">Showing appointments for</div>
+          <div className="user-info-name">👤 {currentUserName}</div>
         </div>
 
-        <div style={{ flex: "0 0 auto", minWidth: "180px" }}>
-          <label
-            style={{
-              fontSize: "11px",
-              color: "#666",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
-            Due
-          </label>
+        <div className="filter-section">
+          <label className="filter-label">Due</label>
           <select
             value={currentFilter.dueFilter}
             onChange={handleDueFilterChange}
-            style={{
-              width: "100%",
-              padding: "6px 8px",
-              fontSize: "13px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              backgroundColor: "white",
-              cursor: "pointer",
-            }}
+            className="filter-select"
           >
             <option value="all">All</option>
             <option value="overdue">Overdue</option>
@@ -834,119 +714,35 @@ const MapComponent: React.FC<MapComponentProps> = ({
           </select>
         </div>
 
-        <div style={{ flex: "1 1 auto", minWidth: "200px" }}>
-          <label
-            style={{
-              fontSize: "11px",
-              color: "#666",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
-            Search
-          </label>
+        <div className="search-section">
+          <label className="filter-label">Search</label>
           <input
             type="text"
             placeholder="Search appointments..."
             value={searchText}
             onChange={handleSearchChange}
-            style={{
-              width: "100%",
-              padding: "6px 8px",
-              fontSize: "13px",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-            }}
+            className="search-input"
           />
         </div>
 
-        <div
-          style={{
-            flex: "0 0 auto",
-            display: "flex",
-            alignItems: "flex-end",
-            gap: "8px",
-          }}
-        >
-          <button
-            onClick={handleRefreshClick}
-            style={{
-              padding: "6px 14px",
-              fontSize: "13px",
-              background: "linear-gradient(90deg, #4facfe 0%, #00f2fe 100%)",
-              color: "#fff",
-              border: "none",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "600",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.12)",
-              transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.transform = "scale(1.05)")
-            }
-            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
-          >
+        <div className="action-section">
+          <button onClick={handleRefreshClick} className="refresh-button">
             🔄 Refresh
           </button>
-
-          <div
-            style={{ fontSize: "11px", color: "#888", paddingBottom: "6px" }}
-          >
+          <div className="appointment-count">
             {appointments.length} of {allAppointmentsCount}
           </div>
         </div>
       </div>
 
       {/* Map Container */}
-      <div
-        ref={mapRef}
-        style={{
-          width: "100%",
-          flex: "1",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
+      <div ref={mapRef} className="map-container">
         {/* No Results Message */}
         {!isLoading && !errorMessage && appointments.length === 0 && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              background: "#ffffff",
-              padding: "25px 30px",
-              borderRadius: "6px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              textAlign: "center",
-              maxWidth: "calc(100% - 60px)",
-              width: "380px",
-              zIndex: 999,
-              border: "1px solid #e8e8e8",
-            }}
-          >
-            <div style={{ fontSize: "36px", marginBottom: "12px" }}>📅</div>
-            <h3
-              style={{
-                color: "#1a1a1a",
-                marginTop: 0,
-                marginBottom: "8px",
-                fontSize: "17px",
-                fontWeight: "700",
-              }}
-            >
-              No Appointments Found
-            </h3>
-            <p
-              style={{
-                color: "#666666",
-                margin: "10px 0 0 0",
-                fontSize: "13px",
-                lineHeight: "1.5",
-              }}
-            >
+          <div className="overlay-message no-appointments-overlay">
+            <div className="no-appointments-icon">📅</div>
+            <h3 className="no-appointments-title">No Appointments Found</h3>
+            <p className="no-appointments-message">
               {allAppointmentsCount === 0
                 ? "No appointments available."
                 : "No appointments match the current filter criteria."}
@@ -956,84 +752,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         {/* Loading Indicator */}
         {isLoading && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              background: "rgba(255, 255, 255, 0.95)",
-              padding: "25px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              textAlign: "center",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                border: "4px solid #f3f3f3",
-                borderTop: "4px solid #0078d4",
-                borderRadius: "50%",
-                width: "50px",
-                height: "50px",
-                animation: "spin 1s linear infinite",
-                margin: "0 auto 15px",
-              }}
-            />
-            <p style={{ margin: 0, color: "#333", fontSize: "14px" }}>
-              Loading your appointments...
-            </p>
+          <div className="loading-overlay">
+            <div className="loading-spinner" />
+            <p className="loading-text">Loading your appointments...</p>
           </div>
         )}
 
         {/* Error Message */}
         {errorMessage && (
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              background: "#fff",
-              padding: "25px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-              textAlign: "center",
-              maxWidth: "400px",
-              zIndex: 1000,
-            }}
-          >
-            <h3
-              style={{
-                color: "#d13438",
-                marginTop: 0,
-                marginBottom: "10px",
-                fontSize: "18px",
-              }}
-            >
-              ⚠️ Configuration Required
-            </h3>
-            <p
-              style={{
-                color: "#555",
-                margin: 0,
-                fontSize: "14px",
-                lineHeight: "1.5",
-              }}
-            >
-              {errorMessage}
-            </p>
+          <div className="error-overlay">
+            <h3 className="error-title">⚠️ Configuration Required</h3>
+            <p className="error-message">{errorMessage}</p>
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
