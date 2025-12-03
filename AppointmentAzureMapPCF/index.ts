@@ -48,7 +48,7 @@ export class AppointmentAzureMapPCF
       await this.fetchUserAppointments(context);
       this.applyFilters();
     } catch (error) {
-      // Error handled in individual methods
+      console.error("[Initialization] Error during data initialization:", error);
     } finally {
       this.renderComponent();
     }
@@ -64,11 +64,13 @@ export class AppointmentAzureMapPCF
       );
 
       if (result.entities.length > 0) {
-        const configRecord = result.entities[0];
-        this.azureMapsKey = configRecord.ti_azuremapskey ?? "";
+        this.azureMapsKey = result.entities[0].ti_azuremapskey ?? "";
+        console.log("[Config Fetch] Azure Maps key retrieved successfully");
+      } else {
+        console.warn("[Config Fetch] No configuration record found");
       }
     } catch (error) {
-      // Configuration fetch failed
+      console.error("[Config Fetch] Failed to retrieve Azure Maps key:", error);
     } finally {
       this.isLoadingConfig = false;
     }
@@ -81,21 +83,24 @@ export class AppointmentAzureMapPCF
       const currentUserId = context.userSettings.userId.replace(/[{}]/g, "");
       console.log("[User Fetch] Current user ID:", currentUserId);
 
-      const result = await context.webAPI.retrieveRecord(
+      // Use OData Web API with retrieveMultipleRecords for better Custom Page compatibility
+      const result = await context.webAPI.retrieveMultipleRecords(
         "systemuser",
-        currentUserId,
-        "?$select=address1_composite"
+        `?$select=address1_composite&$filter=systemuserid eq ${currentUserId}&$top=1`
       );
 
       console.log("[User Fetch] Retrieved user record:", result);
 
-      this.currentUserAddress = result.address1_composite ?? "";
-      console.log(
-        "[User Fetch] Extracted address1_composite:",
-        this.currentUserAddress
-      );
+      if (result.entities.length > 0) {
+        this.currentUserAddress = result.entities[0].address1_composite ?? "";
+        console.log("[User Fetch] Extracted address1_composite:", this.currentUserAddress);
+      } else {
+        console.warn("[User Fetch] No user record found");
+        this.currentUserAddress = "";
+      }
     } catch (error) {
-      console.warn("[User Fetch] Failed to retrieve user address:", error);
+      console.error("[User Fetch] Failed to retrieve user address:", error);
+      console.log("[User Fetch] This may be due to security restrictions in Custom Pages");
       this.currentUserAddress = "";
     }
   }
@@ -105,6 +110,7 @@ export class AppointmentAzureMapPCF
   ): Promise<void> {
     try {
       const currentUserId = context.userSettings.userId;
+      console.log("[Appointments Fetch] Fetching appointments for user:", currentUserId);
 
       const fetchXml = `
         <fetch version="1.0" output-format="xml-platform" mapping="logical" distinct="false">
@@ -131,6 +137,8 @@ export class AppointmentAzureMapPCF
         "appointment",
         `?fetchXml=${encodedFetchXml}`
       );
+
+      console.log(`[Appointments Fetch] Retrieved ${result.entities.length} appointments`);
 
       this.allAppointments = result.entities.map((entity) => {
         let regardingRef: ComponentFramework.EntityReference | undefined;
@@ -172,6 +180,7 @@ export class AppointmentAzureMapPCF
         } as AppointmentRecord;
       });
     } catch (error) {
+      console.error("[Appointments Fetch] Failed to retrieve appointments:", error);
       this.allAppointments = [];
     } finally {
       this.isLoadingAppointments = false;
@@ -272,6 +281,7 @@ export class AppointmentAzureMapPCF
     }
 
     this.filteredAppointments = filtered;
+    console.log(`[Filter] Applied filters - ${filtered.length} of ${this.allAppointments.length} appointments shown`);
   }
 
   private handleFilterChange = (newFilter: FilterOptions): void => {
