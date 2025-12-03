@@ -1,4 +1,4 @@
-// MapComponent.tsx
+// MapComponent.tsx - PART 1: Initialization, State Management, and Core Methods
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
@@ -9,6 +9,7 @@ import {
   FilterOptions,
   UserLocation,
 } from "./types";
+import { AzureMapsRouteService, RoutePoint, RouteResult } from "./RouteService";
 
 interface MapComponentProps {
   appointments: AppointmentRecord[];
@@ -40,6 +41,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onFilterChange,
   onRefresh,
 }) => {
+  // ============= Refs =============
   const mapRef = React.useRef<HTMLDivElement>(null);
   const mapInstanceRef = React.useRef<atlas.Map | null>(null);
   const popupRef = React.useRef<atlas.Popup | null>(null);
@@ -47,6 +49,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const markersRef = React.useRef<MarkerInfo[]>([]);
   const userMarkerRef = React.useRef<atlas.HtmlMarker | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
+  const routeLayerRef = React.useRef<atlas.layer.LineLayer | null>(null);
+  const routeSourceRef = React.useRef<atlas.source.DataSource | null>(null);
+  const routeServiceRef = React.useRef<AzureMapsRouteService | null>(null);
+
+  // ============= State =============
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
   const [searchText, setSearchText] = React.useState<string>(
@@ -55,7 +62,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [userLocation, setUserLocation] = React.useState<UserLocation | null>(
     null
   );
+  const showRoutes  = React.useState<boolean>(true);
+  const [routeData, setRouteData] = React.useState<RouteResult | null>(null);
 
+  // ============= Effects =============
   React.useEffect(() => {
     if (!mapRef.current) {
       setErrorMessage("Map container not found");
@@ -93,6 +103,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   }, [currentUserAddress, isLoading]);
 
+  // ============= Initialization Methods =============
   const cleanup = () => {
     abortControllerRef.current?.abort();
 
@@ -140,6 +151,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
 
       mapInstanceRef.current = map;
+      routeServiceRef.current = new AzureMapsRouteService(azureMapsKey);
 
       const popup = new atlas.Popup({
         pixelOffset: [0, -18],
@@ -148,6 +160,20 @@ const MapComponent: React.FC<MapComponentProps> = ({
       popupRef.current = popup;
 
       map.events.add("ready", async () => {
+        // Initialize route layer and data source
+        const routeSource = new atlas.source.DataSource();
+        map.sources.add(routeSource);
+        routeSourceRef.current = routeSource;
+
+        const routeLayer = new atlas.layer.LineLayer(routeSource, undefined, {
+          strokeColor: "rgba(79, 172, 254, 0.8)",
+          strokeWidth: 3,
+          lineJoin: "round",
+          lineCap: "round",
+        });
+        map.layers.add(routeLayer);
+        routeLayerRef.current = routeLayer;
+
         map.controls.add(
           [
             new atlas.control.ZoomControl(),
@@ -187,6 +213,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
+  // ============= Geocoding Methods =============
   const geocodeAddress = async (
     address: string
   ): Promise<atlas.data.Position | null> => {
@@ -240,99 +267,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  const geocodeAndDisplayUserLocation = async () => {
-    const map = mapInstanceRef.current;
-    const popup = popupRef.current;
-
-    if (!map || !popup || !currentUserAddress) return;
-
-    // Remove existing user marker if any
-    if (userMarkerRef.current) {
-      map.markers.remove(userMarkerRef.current);
-      userMarkerRef.current = null;
-    }
-
-    const position = await geocodeAddress(currentUserAddress);
-
-    if (position) {
-      setUserLocation({ address: currentUserAddress, position });
-
-      const userMarker = new atlas.HtmlMarker({
-        color: "green",
-        position: position,
-      });
-
-      map.events.add("click", userMarker, () => {
-        popup.close();
-        popup.setOptions({
-          content: createUserPopupContent(currentUserName, currentUserAddress),
-          position: position,
-        });
-        popup.open(map);
-      });
-
-      map.markers.add(userMarker);
-      userMarkerRef.current = userMarker;
-
-      map.events.add("click", userMarker, () => {
-        popup.close();
-        popup.setOptions({
-          content: createUserPopupContent(currentUserName, currentUserAddress),
-          position: position,
-        });
-        popup.open(map);
-      });
-
-      map.markers.add(userMarker);
-      userMarkerRef.current = userMarker;
-    }
-  };
-
-  const createUserPopupContent = (
-    userName: string,
-    address: string
-  ): string => {
-    return `
-    <div style="
-      padding: 16px;
-      min-width: 260px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: rgba(32, 32, 32, 0.95);
-      backdrop-filter: blur(8px);
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      color: #f1f1f1;
-      transition: transform 0.2s ease-in-out;
-    ">
-      
-      <div style="
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
-      ">
-        <svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;margin-right:8px;" fill="#00d4ff" viewBox="0 0 24 24">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
-        </svg>
-        <h3 style="margin:0; font-size: 16px; font-weight: 600; color:#00d4ff;">Your Location</h3>
-      </div>
-      
-      <div style="margin-bottom: 10px;">
-        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">User</div>
-        <div style="font-size: 14px; font-weight: 500; color: #fff;">${escapeHtml(
-          userName
-        )}</div>
-      </div>
-      
-      <div>
-        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">Address</div>
-        <div style="font-size: 13px; line-height: 1.4; color: #ccc;">${escapeHtml(
-          address
-        )}</div>
-      </div> 
-    </div>
-  `;
-  };
-
   const batchGeocodeAddresses = async (
     addresses: string[]
   ): Promise<Map<string, atlas.data.Position | null>> => {
@@ -362,6 +296,42 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return results;
   };
 
+  const geocodeAndDisplayUserLocation = async () => {
+    const map = mapInstanceRef.current;
+    const popup = popupRef.current;
+
+    if (!map || !popup || !currentUserAddress) return;
+
+    if (userMarkerRef.current) {
+      map.markers.remove(userMarkerRef.current);
+      userMarkerRef.current = null;
+    }
+
+    const position = await geocodeAddress(currentUserAddress);
+
+    if (position) {
+      setUserLocation({ address: currentUserAddress, position });
+
+      const userMarker = new atlas.HtmlMarker({
+        color: "green",
+        position: position,
+      });
+
+      map.events.add("click", userMarker, () => {
+        popup.close();
+        popup.setOptions({
+          content: createUserPopupContent(currentUserName, currentUserAddress),
+          position: position,
+        });
+        popup.open(map);
+      });
+
+      map.markers.add(userMarker);
+      userMarkerRef.current = userMarker;
+    }
+  };
+
+  // ============= Data Fetching Methods =============
   const fetchRegardingAddress = async (
     regardingobjectid: ComponentFramework.EntityReference
   ): Promise<string | null> => {
@@ -415,6 +385,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
+  // ============= Formatting Methods =============
   const formatDateTime = (date: Date): string => {
     if (!date) return "Not specified";
 
@@ -443,6 +414,55 @@ const MapComponent: React.FC<MapComponentProps> = ({
     } catch {
       return "Unknown";
     }
+  };
+
+  const escapeHtml = (text: string): string => {
+    if (!text) return "";
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  };
+
+  // ============= Popup Content Methods =============
+  const createUserPopupContent = (
+    userName: string,
+    address: string
+  ): string => {
+    return `
+    <div style="
+      padding: 16px;
+      min-width: 260px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: rgba(32, 32, 32, 0.95);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+      color: #f1f1f1;
+    ">
+      <div style="
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+      ">
+        <svg xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px;margin-right:8px;" fill="#00d4ff" viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z"/>
+        </svg>
+        <h3 style="margin:0; font-size: 16px; font-weight: 600; color:#00d4ff;">Your Location</h3>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">User</div>
+        <div style="font-size: 14px; font-weight: 500; color: #fff;">${escapeHtml(
+          userName
+        )}</div>
+      </div>
+      <div>
+        <div style="font-size: 10px; font-weight: 600; color: #aaa; text-transform: uppercase; margin-bottom: 2px;">Address</div>
+        <div style="font-size: 13px; line-height: 1.4; color: #ccc;">${escapeHtml(
+          address
+        )}</div>
+      </div> 
+    </div>
+  `;
   };
 
   const createPopupContent = (appts: AppointmentRecord[]): string => {
@@ -566,13 +586,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   `;
   };
 
-  const escapeHtml = (text: string): string => {
-    if (!text) return "";
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-  };
+  // MapComponent.tsx - PART 2: Marker Updates, Route Calculations & UI Rendering
+  // This continues from Part 1 - Use inside the MapComponent functional component
 
+  // ============= Marker Update Methods =============
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -612,14 +629,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     if (abortControllerRef.current?.signal.aborted) return;
 
-    // Step 4: Create markers
+    // Step 4: Create markers and build route points
     const positions: atlas.data.Position[] = [];
     let markerCount = 0;
+    const routePoints: RoutePoint[] = [];
 
-    for (const [address, appts] of addressMap) {
+    // Sort appointments chronologically
+    const sortedAddresses = uniqueAddresses.sort((a, b) => {
+      const apptA = addressMap.get(a)?.[0];
+      const apptB = addressMap.get(b)?.[0];
+      if (!apptA || !apptB) return 0;
+      return apptA.scheduledstart.getTime() - apptB.scheduledstart.getTime();
+    });
+
+    for (const address of sortedAddresses) {
+      const appts = addressMap.get(address);
       const position = geocodeResults.get(address);
 
-      if (!position) continue;
+      if (!position || !appts) continue;
 
       positions.push(position);
       markerCount++;
@@ -641,11 +668,27 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       map.markers.add(marker);
       markersRef.current.push({ marker, appointment: appts[0] });
+
+      routePoints.push({
+        position,
+        address,
+        appointmentId: appts[0].id,
+        subject: appts[0].subject,
+        scheduledstart: appts[0].scheduledstart,
+      });
     }
 
     // Add user location to positions array if available
     if (userLocation?.position) {
       positions.push(userLocation.position);
+    }
+
+    // Calculate and display routes automatically
+    if (routePoints.length > 0 && userLocation?.position) {
+      await calculateAndDisplayRoute(userLocation.position, routePoints);
+    } else {
+      routeSourceRef.current?.clear();
+      setRouteData(null);
     }
 
     if (positions.length > 0) {
@@ -659,6 +702,40 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
+  const calculateAndDisplayRoute = async (
+    startPosition: atlas.data.Position,
+    routePoints: RoutePoint[]
+  ) => {
+    if (!routeServiceRef.current || !routeSourceRef.current) return;
+
+    try {
+      const result = await routeServiceRef.current.calculateChronologicalRoute(
+        startPosition,
+        routePoints
+      );
+
+      if (result) {
+        setRouteData(result);
+
+        // Create and display route feature
+        const routeFeature = new atlas.data.Feature(
+          new atlas.data.LineString(result.routeCoordinates),
+          {
+            distance: result.totalDistance,
+            duration: result.totalDuration,
+          }
+        );
+
+        routeSourceRef.current.clear();
+        routeSourceRef.current.add(routeFeature);
+      }
+    } catch (error) {
+      console.error("Failed to calculate route:", error);
+      setRouteData(null);
+    }
+  };
+
+  // ============= Event Handlers =============
   const handleDueFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFilterChange({
       dueFilter: e.target.value as DueFilter,
@@ -684,6 +761,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onRefresh();
   };
 
+  // ============= Main Render =============
   return (
     <div
       style={{
@@ -811,6 +889,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
           >
             🔄 Refresh
           </button>
+
           <div
             style={{ fontSize: "11px", color: "#888", paddingBottom: "6px" }}
           >
@@ -846,18 +925,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
               width: "380px",
               zIndex: 999,
               border: "1px solid #e8e8e8",
-              pointerEvents: "auto",
             }}
           >
-            <div
-              style={{
-                fontSize: "36px",
-                marginBottom: "12px",
-                lineHeight: "1",
-              }}
-            >
-              📅
-            </div>
+            <div style={{ fontSize: "36px", marginBottom: "12px" }}>📅</div>
             <h3
               style={{
                 color: "#1a1a1a",
@@ -881,17 +951,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 ? "No appointments available."
                 : "No appointments match the current filter criteria."}
             </p>
-            {allAppointmentsCount > 0 && (
-              <p
-                style={{
-                  color: "#999999",
-                  margin: "8px 0 0 0",
-                  fontSize: "12px",
-                }}
-              >
-                ({allAppointmentsCount} total appointments available)
-              </p>
-            )}
           </div>
         )}
 
@@ -964,12 +1023,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
               }}
             >
               {errorMessage}
-            </p>
-            <p
-              style={{ color: "#777", margin: "15px 0 0 0", fontSize: "12px" }}
-            >
-              Please configure your Azure Maps subscription key in the control
-              properties.
             </p>
           </div>
         )}

@@ -17,7 +17,7 @@ export class AppointmentAzureMapPCF
   private isLoadingAppointments = true;
   private currentFilter: FilterOptions = {
     dueFilter: "all",
-    searchText: ""
+    searchText: "",
   };
   private context: ComponentFramework.Context<IInputs>;
   private currentUserAddress = "";
@@ -37,11 +37,13 @@ export class AppointmentAzureMapPCF
     void this.initializeData(context);
   }
 
-  private async initializeData(context: ComponentFramework.Context<IInputs>): Promise<void> {
+  private async initializeData(
+    context: ComponentFramework.Context<IInputs>
+  ): Promise<void> {
     try {
       await Promise.all([
         this.fetchAzureMapsKeyFromConfig(context),
-        this.fetchCurrentUserAddress(context)
+        this.fetchCurrentUserAddress(context),
       ]);
       await this.fetchUserAppointments(context);
       this.applyFilters();
@@ -73,28 +75,30 @@ export class AppointmentAzureMapPCF
   }
 
   private async fetchCurrentUserAddress(
-  context: ComponentFramework.Context<IInputs>
-): Promise<void> {
-  try {
-    const currentUserId = context.userSettings.userId.replace(/[{}]/g, '');
-    console.log("[User Fetch] Current user ID:", currentUserId);
+    context: ComponentFramework.Context<IInputs>
+  ): Promise<void> {
+    try {
+      const currentUserId = context.userSettings.userId.replace(/[{}]/g, "");
+      console.log("[User Fetch] Current user ID:", currentUserId);
 
-    const result = await context.webAPI.retrieveRecord(
-      "systemuser",
-      currentUserId,
-      "?$select=address1_composite"
-    );
+      const result = await context.webAPI.retrieveRecord(
+        "systemuser",
+        currentUserId,
+        "?$select=address1_composite"
+      );
 
-    console.log("[User Fetch] Retrieved user record:", result);
+      console.log("[User Fetch] Retrieved user record:", result);
 
-    this.currentUserAddress = result.address1_composite ?? "";
-    console.log("[User Fetch] Extracted address1_composite:", this.currentUserAddress);
-  } catch (error) {
-    console.warn("[User Fetch] Failed to retrieve user address:", error);
-    this.currentUserAddress = "";
+      this.currentUserAddress = result.address1_composite ?? "";
+      console.log(
+        "[User Fetch] Extracted address1_composite:",
+        this.currentUserAddress
+      );
+    } catch (error) {
+      console.warn("[User Fetch] Failed to retrieve user address:", error);
+      this.currentUserAddress = "";
+    }
   }
-}
-
 
   private async fetchUserAppointments(
     context: ComponentFramework.Context<IInputs>
@@ -133,11 +137,17 @@ export class AppointmentAzureMapPCF
 
         if (entity._regardingobjectid_value) {
           const regardingType =
-            entity["_regardingobjectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] ||
-            entity["regardingobjectid@Microsoft.Dynamics.CRM.lookuplogicalname"];
-          
+            entity[
+              "_regardingobjectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"
+            ] ||
+            entity[
+              "regardingobjectid@Microsoft.Dynamics.CRM.lookuplogicalname"
+            ];
+
           const regardingName =
-            entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"];
+            entity[
+              "_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"
+            ];
 
           regardingRef = {
             id: { guid: entity._regardingobjectid_value },
@@ -155,8 +165,10 @@ export class AppointmentAzureMapPCF
           description: entity.description ?? "",
           regardingobjectid: regardingRef,
           regardingobjectidname:
-            entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"],
-          ownerId: currentUserId.toLowerCase()
+            entity[
+              "_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"
+            ],
+          ownerId: currentUserId.toLowerCase(),
         } as AppointmentRecord;
       });
     } catch (error) {
@@ -176,49 +188,71 @@ export class AppointmentAzureMapPCF
 
     switch (this.currentFilter.dueFilter) {
       case "overdue": {
-        filtered = filtered.filter(appt => appt.scheduledstart < now);
+        filtered = filtered.filter((appt) => appt.scheduledstart < now);
         break;
       }
       case "today": {
         const endOfToday = new Date(today);
         endOfToday.setDate(endOfToday.getDate() + 1);
-        filtered = filtered.filter(appt => appt.scheduledstart >= today && appt.scheduledstart < endOfToday);
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= today && appt.scheduledstart < endOfToday
+        );
         break;
       }
       case "tomorrow": {
         const endOfTomorrow = new Date(tomorrow);
         endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
-        filtered = filtered.filter(appt => appt.scheduledstart >= tomorrow && appt.scheduledstart < endOfTomorrow);
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= tomorrow &&
+            appt.scheduledstart < endOfTomorrow
+        );
         break;
       }
       case "next7days": {
         const next7Days = new Date(today);
         next7Days.setDate(next7Days.getDate() + 7);
-        filtered = filtered.filter(appt => appt.scheduledstart >= today && appt.scheduledstart < next7Days);
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= today && appt.scheduledstart < next7Days
+        );
         break;
       }
       case "next30days": {
         const next30Days = new Date(today);
         next30Days.setDate(next30Days.getDate() + 30);
-        filtered = filtered.filter(appt => appt.scheduledstart >= today && appt.scheduledstart < next30Days);
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= today && appt.scheduledstart < next30Days
+        );
         break;
       }
       case "next90days": {
         const next90Days = new Date(today);
         next90Days.setDate(next90Days.getDate() + 90);
-        filtered = filtered.filter(appt => appt.scheduledstart >= today && appt.scheduledstart < next90Days);
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= today && appt.scheduledstart < next90Days
+        );
         break;
       }
       case "next6months": {
         const next6Months = new Date(today);
         next6Months.setMonth(next6Months.getMonth() + 6);
-        filtered = filtered.filter(appt => appt.scheduledstart >= today && appt.scheduledstart < next6Months);
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= today && appt.scheduledstart < next6Months
+        );
         break;
       }
       case "next12months": {
         const next12Months = new Date(today);
         next12Months.setMonth(next12Months.getMonth() + 12);
-        filtered = filtered.filter(appt => appt.scheduledstart >= today && appt.scheduledstart < next12Months);
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= today && appt.scheduledstart < next12Months
+        );
         break;
       }
       case "all":
@@ -228,11 +262,12 @@ export class AppointmentAzureMapPCF
 
     if (this.currentFilter.searchText?.trim()) {
       const searchLower = this.currentFilter.searchText.toLowerCase().trim();
-      filtered = filtered.filter(appt =>
-        appt.subject.toLowerCase().includes(searchLower) ||
-        appt.location?.toLowerCase().includes(searchLower) ||
-        appt.description?.toLowerCase().includes(searchLower) ||
-        appt.regardingobjectidname?.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        (appt) =>
+          appt.subject.toLowerCase().includes(searchLower) ||
+          appt.location?.toLowerCase().includes(searchLower) ||
+          appt.description?.toLowerCase().includes(searchLower) ||
+          appt.regardingobjectidname?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -243,36 +278,67 @@ export class AppointmentAzureMapPCF
     this.currentFilter = newFilter;
     this.applyFilters();
     this.renderComponent();
-  }
+  };
 
   private handleRefresh = async (): Promise<void> => {
     this.isLoadingAppointments = true;
     this.renderComponent();
     await Promise.all([
       this.fetchUserAppointments(this.context),
-      this.fetchCurrentUserAddress(this.context)
+      this.fetchCurrentUserAddress(this.context),
     ]);
     this.applyFilters();
     this.renderComponent();
-  }
+  };
 
   private renderComponent(): void {
     if (!this.root) return;
 
     if (this.isLoadingConfig || this.isLoadingAppointments) {
       this.root.render(
-        React.createElement("div", { style: { padding: "20px", textAlign: "center", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" } }, "Loading appointments...")
+        React.createElement(
+          "div",
+          {
+            style: {
+              padding: "20px",
+              textAlign: "center",
+              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+            },
+          },
+          "Loading appointments..."
+        )
       );
       return;
     }
 
     if (!this.azureMapsKey) {
       this.root.render(
-        React.createElement("div", { style: { padding: "30px", textAlign: "center", fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", color: "#d13438" } },
+        React.createElement(
+          "div",
+          {
+            style: {
+              padding: "30px",
+              textAlign: "center",
+              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+              color: "#d13438",
+            },
+          },
           [
-            React.createElement("h3", { key: "title", style: { marginTop: 0 } }, "⚠️ Configuration Error"),
-            React.createElement("p", { key: "message", style: { color: "#555" } }, "Azure Maps key not found in ti_mapconfiguration table."),
-            React.createElement("p", { key: "help", style: { fontSize: "12px", color: "#777" } }, "Please ensure a record exists in ti_mapconfiguration with ti_azuremapskey field populated.")
+            React.createElement(
+              "h3",
+              { key: "title", style: { marginTop: 0 } },
+              "⚠️ Configuration Error"
+            ),
+            React.createElement(
+              "p",
+              { key: "message", style: { color: "#555" } },
+              "Azure Maps key not found in ti_mapconfiguration table."
+            ),
+            React.createElement(
+              "p",
+              { key: "help", style: { fontSize: "12px", color: "#777" } },
+              "Please ensure a record exists in ti_mapconfiguration with ti_azuremapskey field populated."
+            ),
           ]
         )
       );
