@@ -3,27 +3,27 @@
   <control 
     namespace="AppointmentAzureMap"
     constructor="AppointmentAzureMapPCF"
-    version="0.1.0"
+    version="1.13.1"
     display-name-key="Appointment Azure Map"
     description-key="Displays appointments on Azure Maps"
     control-type="standard">
-
-    <!-- Resources -->
+    
+    <!-- Add user ID property -->
+    <property 
+      name="userId" 
+      display-name-key="User_Id" 
+      description-key="Current User ID" 
+      of-type="SingleLine.Text" 
+      usage="input" 
+      required="false" />
+    
     <resources>
       <code path="index.ts" order="1" />
       <css path="css/AppointmentAzureMapPCF.css" order="2" />
     </resources>
-
-    <!-- Dataset -->
-    <data-set 
-      name="appointments"
-      display-name-key="Appointment_Display_Key">
-    </data-set>
-
-    <!-- WebAPI usage -->
+    
     <feature-usage>
       <uses-feature name="WebAPI" required="true" />
     </feature-usage>
-
   </control>
 </manifest>

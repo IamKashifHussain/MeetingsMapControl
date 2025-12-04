@@ -4,6 +4,16 @@ import { createRoot, Root } from "react-dom/client";
 import MapComponent from "./MapComponent";
 import { AppointmentRecord, FilterOptions } from "./types";
 
+interface XrmGlobal {
+  Xrm?: {
+    Utility?: {
+      getGlobalContext: () => {
+        userSettings: { userId?: string };
+      };
+    };
+  };
+}
+
 export class AppointmentAzureMapPCF
   implements ComponentFramework.StandardControl<IInputs, IOutputs>
 {
@@ -19,8 +29,14 @@ export class AppointmentAzureMapPCF
     dueFilter: "all",
     searchText: "",
   };
+
   private context: ComponentFramework.Context<IInputs>;
   private currentUserAddress = "";
+  private currentUserId = "";
+  private currentUserName = "";
+
+  private lastFetchTime = 0;
+  private showRoute = true;
 
   public init(
     context: ComponentFramework.Context<IInputs>,
@@ -35,22 +51,71 @@ export class AppointmentAzureMapPCF
     this.root = createRoot(this.container);
 
     void this.initializeData(context);
+
   }
 
+  
   private async initializeData(
     context: ComponentFramework.Context<IInputs>
   ): Promise<void> {
     try {
+      this.getUserId(context);
+
+      if (!this.currentUserId) {
+        console.error("[Initialization] ✗ No user ID available");
+        this.isLoadingConfig = false;
+        this.isLoadingAppointments = false;
+        this.renderComponent();
+        return;
+      }
+
       await Promise.all([
         this.fetchAzureMapsKeyFromConfig(context),
         this.fetchCurrentUserAddress(context),
       ]);
+
       await this.fetchUserAppointments(context);
+
       this.applyFilters();
     } catch (error) {
-      console.error("[Initialization] Error during data initialization:", error);
+      console.error("[Initialization] Error:", error);
     } finally {
       this.renderComponent();
+    }
+  }
+
+  private getUserId(context: ComponentFramework.Context<IInputs>): void {
+    let userId: string | null = null;
+
+    try {
+      if (context.parameters?.userId?.raw) {
+        userId = context.parameters.userId.raw;
+      } else if (context.userSettings?.userId) {
+        userId = context.userSettings.userId;
+      } else {
+        try {
+          const globalObj = window as unknown as XrmGlobal;
+          if (globalObj.Xrm?.Utility?.getGlobalContext) {
+            const us = globalObj.Xrm.Utility.getGlobalContext().userSettings;
+            if (us?.userId) userId = us.userId;
+          }
+        } catch (xrmError) {
+          console.log("[User ID] Xrm not available:", xrmError);
+        }
+      }
+
+      if (userId) {
+        if (userId.includes("@")) {
+          this.currentUserId = userId.toLowerCase();
+        } else {
+          this.currentUserId = userId.replace(/[{}]/g, "").toLowerCase();
+        }
+      } else {
+        this.currentUserId = "";
+      }
+    } catch (error) {
+      console.error("[User ID] Error:", error);
+      this.currentUserId = "";
     }
   }
 
@@ -65,12 +130,11 @@ export class AppointmentAzureMapPCF
 
       if (result.entities.length > 0) {
         this.azureMapsKey = result.entities[0].ti_azuremapskey ?? "";
-        console.log("[Config Fetch] Azure Maps key retrieved successfully");
       } else {
-        console.warn("[Config Fetch] No configuration record found");
+        console.warn("[Config] No configuration found.");
       }
     } catch (error) {
-      console.error("[Config Fetch] Failed to retrieve Azure Maps key:", error);
+      console.error("[Config] Azure Maps Key Error:", error);
     } finally {
       this.isLoadingConfig = false;
     }
@@ -79,89 +143,76 @@ export class AppointmentAzureMapPCF
   private async fetchCurrentUserAddress(
     context: ComponentFramework.Context<IInputs>
   ): Promise<void> {
+    if (!this.currentUserId) return;
+
     try {
-      const currentUserId = context.userSettings.userId.replace(/[{}]/g, "");
-      console.log("[User Fetch] Current user ID:", currentUserId);
+      try {
+        const user = await context.webAPI.retrieveRecord(
+          "systemuser",
+          this.currentUserId,
+          "?$select=address1_composite,fullname"
+        );
 
-      // Use OData Web API with retrieveMultipleRecords for better Custom Page compatibility
-      const result = await context.webAPI.retrieveMultipleRecords(
-        "systemuser",
-        `?$select=address1_composite&$filter=systemuserid eq ${currentUserId}&$top=1`
-      );
+        this.currentUserAddress = user.address1_composite ?? "";
+        this.currentUserName = user.fullname ?? "Current User";
+        return;
+      } catch (retrieveError) {
+        console.log("[User Fetch] retrieveRecord failed:", retrieveError);
+      }
 
-      console.log("[User Fetch] Retrieved user record:", result);
+      try {
+        const result = await context.webAPI.retrieveMultipleRecords(
+          "systemuser",
+          `?$select=address1_composite,fullname&$filter=systemuserid eq ${this.currentUserId}&$top=1`
+        );
 
-      if (result.entities.length > 0) {
-        this.currentUserAddress = result.entities[0].address1_composite ?? "";
-        console.log("[User Fetch] Extracted address1_composite:", this.currentUserAddress);
-      } else {
-        console.warn("[User Fetch] No user record found");
-        this.currentUserAddress = "";
+        if (result.entities.length > 0) {
+          this.currentUserAddress = result.entities[0].address1_composite ?? "";
+          this.currentUserName = result.entities[0].fullname ?? "Current User";
+        }
+      } catch (multipleError) {
+        console.log("[User Fetch] retrieveMultipleRecords failed:", multipleError);
       }
     } catch (error) {
-      console.error("[User Fetch] Failed to retrieve user address:", error);
-      console.log("[User Fetch] This may be due to security restrictions in Custom Pages");
+      console.error("[User Fetch] Unexpected error:", error);
       this.currentUserAddress = "";
+      this.currentUserName = "Current User";
     }
   }
 
   private async fetchUserAppointments(
     context: ComponentFramework.Context<IInputs>
   ): Promise<void> {
+    if (!this.currentUserId) {
+      this.allAppointments = [];
+      this.isLoadingAppointments = false;
+      return;
+    }
+
     try {
-      const currentUserId = context.userSettings.userId;
-      console.log("[Appointments Fetch] Fetching appointments for user:", currentUserId);
-
-      const fetchXml = `
-        <fetch version="1.0" output-format="xml-platform" mapping="logical" distinct="false">
-          <entity name="appointment">
-            <attribute name="subject" />
-            <attribute name="scheduledstart" />
-            <attribute name="scheduledend" />
-            <attribute name="location" />
-            <attribute name="description" />
-            <attribute name="activityid" />
-            <attribute name="regardingobjectid" />
-            <order attribute="scheduledstart" descending="false" />
-            <filter type="and">
-              <condition attribute="ownerid" operator="eq" value="${currentUserId}" />
-              <condition attribute="statecode" operator="eq" value="0" />
-            </filter>
-          </entity>
-        </fetch>
-      `;
-
-      const encodedFetchXml = encodeURIComponent(fetchXml);
+      const query =
+        `?$select=subject,scheduledstart,scheduledend,location,description,activityid,_regardingobjectid_value` +
+        `&$filter=_ownerid_value eq ${this.currentUserId}` +
+        `&$orderby=scheduledstart asc&$top=5000`;
 
       const result = await context.webAPI.retrieveMultipleRecords(
         "appointment",
-        `?fetchXml=${encodedFetchXml}`
+        query
       );
-
-      console.log(`[Appointments Fetch] Retrieved ${result.entities.length} appointments`);
 
       this.allAppointments = result.entities.map((entity) => {
         let regardingRef: ComponentFramework.EntityReference | undefined;
 
         if (entity._regardingobjectid_value) {
-          const regardingType =
-            entity[
-              "_regardingobjectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"
-            ] ||
-            entity[
-              "regardingobjectid@Microsoft.Dynamics.CRM.lookuplogicalname"
-            ];
-
-          const regardingName =
-            entity[
-              "_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"
-            ];
-
           regardingRef = {
             id: { guid: entity._regardingobjectid_value },
-            etn: regardingType || "",
-            name: regardingName || "",
-          } as ComponentFramework.EntityReference;
+            etn:
+              entity["_regardingobjectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] ??
+              "",
+            name:
+              entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"] ??
+              "",
+          };
         }
 
         return {
@@ -173,14 +224,13 @@ export class AppointmentAzureMapPCF
           description: entity.description ?? "",
           regardingobjectid: regardingRef,
           regardingobjectidname:
-            entity[
-              "_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"
-            ],
-          ownerId: currentUserId.toLowerCase(),
-        } as AppointmentRecord;
+            entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"] ??
+            "",
+          ownerId: this.currentUserId,
+        };
       });
     } catch (error) {
-      console.error("[Appointments Fetch] Failed to retrieve appointments:", error);
+      console.error("[Appointments Fetch] Error:", error);
       this.allAppointments = [];
     } finally {
       this.isLoadingAppointments = false;
@@ -196,71 +246,61 @@ export class AppointmentAzureMapPCF
     let filtered = [...this.allAppointments];
 
     switch (this.currentFilter.dueFilter) {
-      case "overdue": {
+      case "overdue":
         filtered = filtered.filter((appt) => appt.scheduledstart < now);
         break;
-      }
-      case "today": {
-        const endOfToday = new Date(today);
-        endOfToday.setDate(endOfToday.getDate() + 1);
+      case "today":
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < endOfToday
+            appt.scheduledstart >= today &&
+            appt.scheduledstart < new Date(today.getTime() + 24 * 60 * 60 * 1000)
         );
         break;
-      }
-      case "tomorrow": {
-        const endOfTomorrow = new Date(tomorrow);
-        endOfTomorrow.setDate(endOfTomorrow.getDate() + 1);
+      case "tomorrow":
         filtered = filtered.filter(
           (appt) =>
             appt.scheduledstart >= tomorrow &&
-            appt.scheduledstart < endOfTomorrow
+            appt.scheduledstart < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)
         );
         break;
-      }
-      case "next7days": {
-        const next7Days = new Date(today);
-        next7Days.setDate(next7Days.getDate() + 7);
+      case "next7days":
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < next7Days
+            appt.scheduledstart >= today &&
+            appt.scheduledstart < new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
         );
         break;
-      }
-      case "next30days": {
-        const next30Days = new Date(today);
-        next30Days.setDate(next30Days.getDate() + 30);
+      case "next30days":
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < next30Days
+            appt.scheduledstart >= today &&
+            appt.scheduledstart <
+              new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
         );
         break;
-      }
-      case "next90days": {
-        const next90Days = new Date(today);
-        next90Days.setDate(next90Days.getDate() + 90);
+      case "next90days":
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < next90Days
+            appt.scheduledstart >= today &&
+            appt.scheduledstart <
+              new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000)
         );
         break;
-      }
       case "next6months": {
-        const next6Months = new Date(today);
-        next6Months.setMonth(next6Months.getMonth() + 6);
+        const d = new Date(today);
+        d.setMonth(d.getMonth() + 6);
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < next6Months
+            appt.scheduledstart >= today && appt.scheduledstart < d
         );
         break;
       }
       case "next12months": {
-        const next12Months = new Date(today);
-        next12Months.setMonth(next12Months.getMonth() + 12);
+        const d = new Date(today);
+        d.setMonth(d.getMonth() + 12);
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < next12Months
+            appt.scheduledstart >= today && appt.scheduledstart < d
         );
         break;
       }
@@ -270,18 +310,17 @@ export class AppointmentAzureMapPCF
     }
 
     if (this.currentFilter.searchText?.trim()) {
-      const searchLower = this.currentFilter.searchText.toLowerCase().trim();
+      const s = this.currentFilter.searchText.trim().toLowerCase();
       filtered = filtered.filter(
         (appt) =>
-          appt.subject.toLowerCase().includes(searchLower) ||
-          appt.location?.toLowerCase().includes(searchLower) ||
-          appt.description?.toLowerCase().includes(searchLower) ||
-          appt.regardingobjectidname?.toLowerCase().includes(searchLower)
+          appt.subject.toLowerCase().includes(s) ||
+          appt.location?.toLowerCase().includes(s) ||
+          appt.description?.toLowerCase().includes(s) ||
+          appt.regardingobjectidname?.toLowerCase().includes(s)
       );
     }
 
     this.filteredAppointments = filtered;
-    console.log(`[Filter] Applied filters - ${filtered.length} of ${this.allAppointments.length} appointments shown`);
   }
 
   private handleFilterChange = (newFilter: FilterOptions): void => {
@@ -290,13 +329,22 @@ export class AppointmentAzureMapPCF
     this.renderComponent();
   };
 
+  private handleRouteToggle = (enabled: boolean): void => {
+    this.showRoute = enabled;
+    this.renderComponent();
+  };
+
   private handleRefresh = async (): Promise<void> => {
     this.isLoadingAppointments = true;
     this.renderComponent();
+
+    this.getUserId(this.context);
+
     await Promise.all([
       this.fetchUserAppointments(this.context),
       this.fetchCurrentUserAddress(this.context),
     ]);
+
     this.applyFilters();
     this.renderComponent();
   };
@@ -308,14 +356,8 @@ export class AppointmentAzureMapPCF
       this.root.render(
         React.createElement(
           "div",
-          {
-            style: {
-              padding: "20px",
-              textAlign: "center",
-              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-            },
-          },
-          "Loading appointments..."
+          { style: { padding: "20px", textAlign: "center" } },
+          this.isLoadingConfig ? "Loading configuration..." : "Loading appointments..."
         )
       );
       return;
@@ -325,29 +367,31 @@ export class AppointmentAzureMapPCF
       this.root.render(
         React.createElement(
           "div",
-          {
-            style: {
-              padding: "30px",
-              textAlign: "center",
-              fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-              color: "#d13438",
-            },
-          },
+          { style: { padding: "20px", textAlign: "center", color: "#d13438" } },
           [
-            React.createElement(
-              "h3",
-              { key: "title", style: { marginTop: 0 } },
-              "⚠️ Configuration Error"
-            ),
+            React.createElement("h3", { key: "t" }, "⚠️ Configuration Error"),
             React.createElement(
               "p",
-              { key: "message", style: { color: "#555" } },
-              "Azure Maps key not found in ti_mapconfiguration table."
+              { key: "m" },
+              "Azure Maps key not found in ti_mapconfiguration."
             ),
+          ]
+        )
+      );
+      return;
+    }
+
+    if (!this.currentUserId) {
+      this.root.render(
+        React.createElement(
+          "div",
+          { style: { padding: "20px", textAlign: "center", color: "#d13438" } },
+          [
+            React.createElement("h3", { key: "t" }, "⚠️ User Context Error"),
             React.createElement(
               "p",
-              { key: "help", style: { fontSize: "12px", color: "#777" } },
-              "Please ensure a record exists in ti_mapconfiguration with ti_azuremapskey field populated."
+              { key: "m" },
+              "Could not retrieve the current user ID."
             ),
           ]
         )
@@ -361,10 +405,12 @@ export class AppointmentAzureMapPCF
         allAppointmentsCount: this.allAppointments.length,
         azureMapsKey: this.azureMapsKey,
         context: this.context,
-        currentUserName: this.context.userSettings.userName ?? "Current User",
+        currentUserName: this.currentUserName,
         currentUserAddress: this.currentUserAddress,
         currentFilter: this.currentFilter,
+        showRoute: this.showRoute,
         onFilterChange: this.handleFilterChange,
+        onRouteToggle: this.handleRouteToggle,
         onRefresh: this.handleRefresh,
       })
     );
@@ -372,6 +418,14 @@ export class AppointmentAzureMapPCF
 
   public updateView(context: ComponentFramework.Context<IInputs>): void {
     this.context = context;
+
+    const previous = this.currentUserId;
+    this.getUserId(context);
+
+    if (previous !== this.currentUserId && this.currentUserId) {
+      console.log("[Update] User changed → Reloading data...");
+      void this.initializeData(context);
+    }
   }
 
   public getOutputs(): IOutputs {
@@ -379,7 +433,7 @@ export class AppointmentAzureMapPCF
   }
 
   public destroy(): void {
-    if (this.root) {
+    if (this.root != null) {
       this.root.unmount();
       this.root = null;
     }

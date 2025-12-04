@@ -1,4 +1,4 @@
-// MapComponent.tsx - Refactored with external CSS
+// MapComponent.tsx - With route toggle and filter-aware routing
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
@@ -20,7 +20,9 @@ interface MapComponentProps {
   currentUserName: string;
   currentUserAddress: string;
   currentFilter: FilterOptions;
+  showRoute: boolean;
   onFilterChange: (filter: FilterOptions) => void;
+  onRouteToggle: (enabled: boolean) => void;
   onRefresh: () => void;
 }
 
@@ -39,7 +41,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
   currentUserName,
   currentUserAddress,
   currentFilter,
+  showRoute,
   onFilterChange,
+  onRouteToggle,
   onRefresh,
 }) => {
   // ============= Refs =============
@@ -95,7 +99,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [appointments]);
+  }, [appointments, showRoute]);
 
   React.useEffect(() => {
     if (currentUserAddress && mapInstanceRef.current && !isLoading) {
@@ -124,6 +128,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
         }
       });
       markersRef.current = [];
+    }
+
+    if (routeSourceRef.current) {
+      routeSourceRef.current.clear();
     }
 
     if (mapInstanceRef.current) {
@@ -193,20 +201,26 @@ const MapComponent: React.FC<MapComponentProps> = ({
           }
         );
 
-        await updateMarkers();
+        setIsLoading(false);
+        
+        // Geocode user location first
         if (currentUserAddress) {
           await geocodeAndDisplayUserLocation();
         }
-        setIsLoading(false);
+        
+        // Then update markers (which will calculate route if user location exists)
+        await updateMarkers();
       });
 
       map.events.add("error", (error) => {
+        console.error("[Map] Error event:", error);
         if (markersRef.current.length === 0) {
           setErrorMessage("Failed to load map");
         }
         setIsLoading(false);
       });
     } catch (error) {
+      console.error("[Map] Initialization error:", error);
       setErrorMessage("Failed to initialize map");
       setIsLoading(false);
     }
@@ -260,6 +274,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return null;
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
+        console.error("[Geocode] Error geocoding address:", address, error);
         geocodeCacheRef.current[normalizedAddress] = null;
       }
       return null;
@@ -299,8 +314,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
 
-    if (!map || !popup || !currentUserAddress) return;
+    if (!map || !popup || !currentUserAddress) {
+      console.log("[User Location] Cannot geocode - missing dependencies");
+      return;
+    }
 
+    console.log("[User Location] Geocoding user address:", currentUserAddress);
+
+    // Remove existing user marker
     if (userMarkerRef.current) {
       map.markers.remove(userMarkerRef.current);
       userMarkerRef.current = null;
@@ -309,7 +330,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const position = await geocodeAddress(currentUserAddress);
 
     if (position) {
-      setUserLocation({ address: currentUserAddress, position });
+      console.log("[User Location] ✓ User position geocoded:", position);
+      const newUserLocation = { address: currentUserAddress, position };
+      setUserLocation(newUserLocation);
 
       const userMarker = new atlas.HtmlMarker({
         color: "green",
@@ -327,6 +350,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       map.markers.add(userMarker);
       userMarkerRef.current = userMarker;
+
+      // Recalculate route with new user location if we have appointments
+      if (appointments.length > 0) {
+        console.log("[User Location] Triggering marker update to recalculate route");
+        await updateMarkers();
+      }
+    } else {
+      console.warn("[User Location] ⚠ Failed to geocode user address");
+      setUserLocation(null);
     }
   };
 
@@ -380,6 +412,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       return null;
     } catch (error) {
+      console.error("[Fetch Address] Error fetching regarding address:", error);
       return null;
     }
   };
@@ -526,13 +559,37 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
 
-    if (!map || !popup) return;
+    if (!map || !popup) {
+      console.log("[Markers] Cannot update - map or popup not ready");
+      return;
+    }
 
+    console.log("[Markers] Starting marker update with", appointments.length, "appointments");
+    console.log("[Markers] Route display:", showRoute ? "enabled" : "disabled");
+    console.log("[Markers] User location available:", !!userLocation?.position);
+
+    // Close any open popup
+    popup.close();
+
+    // Clear existing markers
     markersRef.current.forEach((markerInfo) => {
       map.markers.remove(markerInfo.marker);
     });
     markersRef.current = [];
 
+    // Clear route immediately when starting to update markers
+    if (routeSourceRef.current) {
+      routeSourceRef.current.clear();
+    }
+    setRouteData(null);
+
+    // If no appointments, ensure everything is cleared and exit
+    if (appointments.length === 0) {
+      console.log("[Markers] No appointments to display");
+      return;
+    }
+
+    // Fetch addresses for all appointments
     const addressPromises = appointments.map(async (appt) => {
       if (!appt.regardingobjectid) return null;
       const address = await fetchRegardingAddress(appt.regardingobjectid);
@@ -541,8 +598,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     const addressResults = await Promise.all(addressPromises);
 
-    if (abortControllerRef.current?.signal.aborted) return;
+    if (abortControllerRef.current?.signal.aborted) {
+      console.log("[Markers] Update aborted");
+      return;
+    }
 
+    // Group appointments by address
     const addressMap = new Map<string, AppointmentRecord[]>();
     for (const result of addressResults) {
       if (result && result.address) {
@@ -554,14 +615,28 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     const uniqueAddresses = Array.from(addressMap.keys());
+    
+    // If no valid addresses found, clear everything and exit
+    if (uniqueAddresses.length === 0) {
+      console.log("[Markers] No valid addresses found for appointments");
+      return;
+    }
+
+    console.log("[Markers] Found", uniqueAddresses.length, "unique addresses");
+
+    // Batch geocode all addresses
     const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
 
-    if (abortControllerRef.current?.signal.aborted) return;
+    if (abortControllerRef.current?.signal.aborted) {
+      console.log("[Markers] Update aborted after geocoding");
+      return;
+    }
 
     const positions: atlas.data.Position[] = [];
     let markerCount = 0;
     const routePoints: RoutePoint[] = [];
 
+    // Sort addresses by earliest appointment time
     const sortedAddresses = uniqueAddresses.sort((a, b) => {
       const apptA = addressMap.get(a)?.[0];
       const apptB = addressMap.get(b)?.[0];
@@ -569,6 +644,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return apptA.scheduledstart.getTime() - apptB.scheduledstart.getTime();
     });
 
+    // Create markers for each location
     for (const address of sortedAddresses) {
       const appts = addressMap.get(address);
       const position = geocodeResults.get(address);
@@ -605,17 +681,33 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
+    console.log("[Markers] Created", markerCount, "markers");
+
+    // Add user location to positions for camera bounds
     if (userLocation?.position) {
       positions.push(userLocation.position);
     }
 
-    if (routePoints.length > 0 && userLocation?.position) {
+    // Calculate and display route ONLY if showRoute is enabled
+    if (showRoute && routePoints.length > 0 && userLocation?.position) {
+      console.log("[Markers] Calculating route with", routePoints.length, "points and user location");
       await calculateAndDisplayRoute(userLocation.position, routePoints);
     } else {
-      routeSourceRef.current?.clear();
+      // Explicitly clear route if conditions aren't met
+      if (!showRoute) {
+        console.log("[Markers] Route display disabled by user");
+      } else if (!userLocation?.position) {
+        console.log("[Markers] No route - user location not available yet");
+      } else {
+        console.log("[Markers] No route - no route points");
+      }
+      if (routeSourceRef.current) {
+        routeSourceRef.current.clear();
+      }
       setRouteData(null);
     }
 
+    // Adjust camera to fit all markers
     if (positions.length > 0) {
       setErrorMessage("");
       const bounds = atlas.data.BoundingBox.fromPositions(positions);
@@ -631,7 +723,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
     startPosition: atlas.data.Position,
     routePoints: RoutePoint[]
   ) => {
-    if (!routeServiceRef.current || !routeSourceRef.current) return;
+    if (!routeServiceRef.current || !routeSourceRef.current) {
+      console.log("[Route] Cannot calculate - service or source not ready");
+      return;
+    }
+
+    console.log("[Route] Calculating route from user location through", routePoints.length, "points");
+
+    // Clear existing route before calculating new one
+    routeSourceRef.current.clear();
+    setRouteData(null);
 
     try {
       const result = await routeServiceRef.current.calculateChronologicalRoute(
@@ -639,7 +740,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         routePoints
       );
 
-      if (result) {
+      if (result && result.routeCoordinates && result.routeCoordinates.length > 0) {
+        console.log("[Route] ✓ Route calculated successfully -", result.routeCoordinates.length, "coordinates");
         setRouteData(result);
 
         const routeFeature = new atlas.data.Feature(
@@ -652,9 +754,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         routeSourceRef.current.clear();
         routeSourceRef.current.add(routeFeature);
+        
+        console.log("[Route] ✓ Route displayed on map");
+      } else {
+        console.warn("[Route] ⚠ No valid route coordinates returned");
+        routeSourceRef.current.clear();
+        setRouteData(null);
       }
     } catch (error) {
-      console.error("Failed to calculate route:", error);
+      console.error("[Route] ✗ Failed to calculate route:", error);
+      routeSourceRef.current.clear();
       setRouteData(null);
     }
   };
@@ -682,12 +791,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   const handleRefreshClick = () => {
+    console.log("[UI] Refresh button clicked");
     onRefresh();
+  };
+
+  const handleRouteToggleClick = () => {
+    const newShowRoute = !showRoute;
+    console.log("[UI] Route toggle clicked - new state:", newShowRoute);
+    onRouteToggle(newShowRoute);
   };
 
   // ============= Main Render =============
   return (
-    <div className="map-component-container">
+    <div className="appointment-azure-map-container">
       {/* Filter Controls Bar */}
       <div className="filter-controls-bar">
         <div className="user-info-section">
@@ -723,6 +839,28 @@ const MapComponent: React.FC<MapComponentProps> = ({
             onChange={handleSearchChange}
             className="search-input"
           />
+        </div>
+
+        <div className="route-toggle-section">
+          <label className="route-toggle-container">
+            <input
+              type="checkbox"
+              checked={showRoute}
+              onChange={handleRouteToggleClick}
+              className="route-toggle-checkbox"
+            />
+            <span className="route-toggle-label">🗺️ Show Route</span>
+          </label>
+          {routeData && showRoute && (
+            <div className="route-info">
+              <span className="route-info-item">
+                📏 {(routeData.totalDistance / 1000).toFixed(1)} km
+              </span>
+              <span className="route-info-item">
+                ⏱️ {Math.round(routeData.totalDuration / 60)} min
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="action-section">
