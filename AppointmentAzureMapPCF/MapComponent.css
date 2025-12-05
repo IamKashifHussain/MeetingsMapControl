@@ -133,44 +133,6 @@
 }
 
 /* ============================================
-   Search Section - Enhanced Input
-   ============================================ */
-.search-section {
-  flex: 1 1 auto;
-  min-width: 240px;
-  max-width: 400px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 14px 10px 40px;
-  font-size: 14px;
-  border: 2px solid #e9ecef;
-  border-radius: 10px;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 500;
-  color: #495057;
-  background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.35-4.35'%3E%3C/path%3E%3C/svg%3E") no-repeat 12px center;
-}
-
-.search-input::placeholder {
-  color: #adb5bd;
-}
-
-.search-input:hover {
-  border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-  transform: translateY(-1px);
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-  transform: translateY(-1px);
-}
-
-/* ============================================
    Route Toggle Section - Modern Switch Design
    ============================================ */
 .route-toggle-section {
@@ -225,6 +187,45 @@
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+/* Route Calculating Indicator */
+.route-calculating-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  animation: slideIn 0.3s ease-out;
+}
+
+.route-calculating-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.route-calculating-text {
+  flex-shrink: 0;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ============================================
@@ -689,10 +690,6 @@
   .filter-due-section {
     min-width: 180px;
   }
-
-  .search-section {
-    min-width: 200px;
-  }
 }
 
 @media (max-width: 992px) {
@@ -722,7 +719,6 @@
 
   .filter-section,
   .filter-due-section,
-  .search-section,
   .route-toggle-section {
     flex: 1 1 100%;
     min-width: auto;
@@ -761,14 +757,9 @@
     border-radius: 12px;
   }
 
-  .filter-select,
-  .search-input {
+  .filter-select {
     font-size: 13px;
     padding: 9px 12px;
-  }
-
-  .search-input {
-    padding-left: 36px;
   }
 
   .refresh-button {
@@ -794,7 +785,6 @@
 }
 
 .filter-select:focus,
-.search-input:focus,
 .refresh-button:focus,
 .route-toggle-checkbox:focus {
   outline: none;
@@ -819,8 +809,7 @@
     border: 3px solid #000;
   }
 
-  .filter-select,
-  .search-input {
+  .filter-select {
     border-width: 3px;
   }
 
@@ -847,15 +836,13 @@
     color: #adb5bd;
   }
 
-  .filter-select,
-  .search-input {
+  .filter-select {
     background: #2d3139;
     border-color: #495057;
     color: #e9ecef;
   }
 
-  .filter-select:hover,
-  .search-input:hover {
+  .filter-select:hover {
     border-color: #667eea;
     background: #343840;
   }

@@ -61,13 +61,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // ============= State =============
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
-  const [searchText, setSearchText] = React.useState<string>(
-    currentFilter.searchText || ""
-  );
   const [userLocation, setUserLocation] = React.useState<UserLocation | null>(
     null
   );
   const [routeData, setRouteData] = React.useState<RouteResult | null>(null);
+  const [isCalculatingRoute, setIsCalculatingRoute] = React.useState<boolean>(false);
 
   // ============= Effects =============
   React.useEffect(() => {
@@ -106,6 +104,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
       void geocodeAndDisplayUserLocation();
     }
   }, [currentUserAddress, isLoading]);
+
+  React.useEffect(() => {
+    if (userLocation?.position && mapInstanceRef.current && popupRef.current && !isLoading && showRoute) {
+      console.log("[Route] User location available - recalculating route");
+      void updateMarkers();
+    }
+  }, [userLocation]);
 
   // ============= Initialization Methods =============
   const cleanup = () => {
@@ -712,6 +717,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     console.log("[Route] Calculating route from user location through", routePoints.length, "points");
+    setIsCalculatingRoute(true);
 
     routeSourceRef.current.clear();
     setRouteData(null);
@@ -747,6 +753,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       console.error("[Route] ✗ Failed to calculate route:", error);
       routeSourceRef.current.clear();
       setRouteData(null);
+    } finally {
+      setIsCalculatingRoute(false);
     }
   };
 
@@ -754,22 +762,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const handleDueFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFilterChange({
       dueFilter: e.target.value as DueFilter,
-      searchText: searchText,
     });
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newSearchText = e.target.value;
-    setSearchText(newSearchText);
-
-    const timeoutId = setTimeout(() => {
-      onFilterChange({
-        dueFilter: currentFilter.dueFilter,
-        searchText: newSearchText,
-      });
-    }, 300);
-
-    return () => clearTimeout(timeoutId);
   };
 
   const handleRefreshClick = () => {
@@ -813,17 +806,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             </select>
           </div>
 
-          <div className="search-section">
-            <label className="filter-label">Search</label>
-            <input
-              type="text"
-              placeholder="Search appointments..."
-              value={searchText}
-              onChange={handleSearchChange}
-              className="search-input"
-            />
-          </div>
-
           <div className="route-toggle-section">
             <label className="route-toggle-container">
               <input
@@ -831,10 +813,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 checked={showRoute}
                 onChange={handleRouteToggleClick}
                 className="route-toggle-checkbox"
+                disabled={isCalculatingRoute}
               />
-              <span className="route-toggle-label">🗺️ Show Route</span>
+              <span className="route-toggle-label">
+                {isCalculatingRoute ? "🔄 Calculating Route..." : "🗺️ Show Route"}
+              </span>
             </label>
-            {routeData && showRoute && (
+            {routeData && showRoute && !isCalculatingRoute && (
               <div className="route-info">
                 <span className="route-info-item">
                   📏 {(routeData.totalDistance / 1000).toFixed(1)} km
@@ -842,6 +827,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 <span className="route-info-item">
                   ⏱️ {Math.round(routeData.totalDuration / 60)} min
                 </span>
+              </div>
+            )}
+            {isCalculatingRoute && (
+              <div className="route-calculating-indicator">
+                <div className="route-calculating-spinner"></div>
+                <span className="route-calculating-text">Optimizing route...</span>
               </div>
             )}
           </div>

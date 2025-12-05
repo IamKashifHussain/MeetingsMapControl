@@ -27,7 +27,6 @@ export class AppointmentAzureMapPCF
   private isLoadingAppointments = true;
   private currentFilter: FilterOptions = {
     dueFilter: "all",
-    searchText: "",
   };
 
   private context: ComponentFramework.Context<IInputs>;
@@ -35,7 +34,6 @@ export class AppointmentAzureMapPCF
   private currentUserId = "";
   private currentUserName = "";
 
-  private lastFetchTime = 0;
   private showRoute = true;
 
   public init(
@@ -51,7 +49,6 @@ export class AppointmentAzureMapPCF
     this.root = createRoot(this.container);
 
     void this.initializeData(context);
-
   }
   
   private async initializeData(
@@ -306,17 +303,6 @@ export class AppointmentAzureMapPCF
       case "all":
       default:
         break;
-    }
-
-    if (this.currentFilter.searchText?.trim()) {
-      const s = this.currentFilter.searchText.trim().toLowerCase();
-      filtered = filtered.filter(
-        (appt) =>
-          appt.subject.toLowerCase().includes(s) ||
-          appt.location?.toLowerCase().includes(s) ||
-          appt.description?.toLowerCase().includes(s) ||
-          appt.regardingobjectidname?.toLowerCase().includes(s)
-      );
     }
 
     this.filteredAppointments = filtered;

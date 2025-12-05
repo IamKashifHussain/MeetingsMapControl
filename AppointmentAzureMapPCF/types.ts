@@ -26,7 +26,6 @@ export type DueFilter =
 
 export interface FilterOptions {
   dueFilter: DueFilter;
-  searchText?: string;
 }
 
 export interface UserLocation {
