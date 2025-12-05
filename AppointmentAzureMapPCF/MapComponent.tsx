@@ -65,7 +65,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     null
   );
   const [routeData, setRouteData] = React.useState<RouteResult | null>(null);
-  const [isCalculatingRoute, setIsCalculatingRoute] = React.useState<boolean>(false);
+  const [isCalculatingRoute, setIsCalculatingRoute] =
+    React.useState<boolean>(false);
 
   // ============= Effects =============
   React.useEffect(() => {
@@ -106,7 +107,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [currentUserAddress, isLoading]);
 
   React.useEffect(() => {
-    if (userLocation?.position && mapInstanceRef.current && popupRef.current && !isLoading && showRoute) {
+    if (
+      userLocation?.position &&
+      mapInstanceRef.current &&
+      popupRef.current &&
+      !isLoading &&
+      showRoute
+    ) {
       console.log("[Route] User location available - recalculating route");
       void updateMarkers();
     }
@@ -161,6 +168,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         language: "en-US",
         showFeedbackLink: false,
         showLogo: false,
+        minZoom: 1, // ADD THIS: Minimum zoom level
+        maxZoom: 20, // ADD THIS: Maximum zoom level
       });
 
       mapInstanceRef.current = map;
@@ -206,12 +215,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
           }
         );
 
+        // ADD THIS: Set map bounds to prevent excessive zooming
+        map.setCamera({
+          bounds: [-180, -85, 180, 85],
+          padding: 0,
+        });
+
         setIsLoading(false);
-        
+
         if (currentUserAddress) {
           await geocodeAndDisplayUserLocation();
         }
-        
+
         await updateMarkers();
       });
 
@@ -354,7 +369,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       userMarkerRef.current = userMarker;
 
       if (appointments.length > 0) {
-        console.log("[User Location] Triggering marker update to recalculate route");
+        console.log(
+          "[User Location] Triggering marker update to recalculate route"
+        );
         await updateMarkers();
       }
     } else {
@@ -458,7 +475,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // MapComponent.tsx - Part 2 of 2
 
   // ============= Popup Content Methods =============
-  const createUserPopupContent = (userName: string, address: string): string => {
+  const createUserPopupContent = (
+    userName: string,
+    address: string
+  ): string => {
     return `
       <div class="user-popup-container">
         <div class="user-popup-header">
@@ -502,7 +522,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 appt.scheduledstart,
                 appt.scheduledend
               );
-              const description = appt.description || "No description available";
+              const description =
+                appt.description || "No description available";
               const regarding = appt.regardingobjectidname || "";
 
               return `
@@ -566,7 +587,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
-    console.log("[Markers] Starting marker update with", appointments.length, "appointments");
+    console.log(
+      "[Markers] Starting marker update with",
+      appointments.length,
+      "appointments"
+    );
     console.log("[Markers] Route display:", showRoute ? "enabled" : "disabled");
     console.log("[Markers] User location available:", !!userLocation?.position);
 
@@ -611,7 +636,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     const uniqueAddresses = Array.from(addressMap.keys());
-    
+
     if (uniqueAddresses.length === 0) {
       console.log("[Markers] No valid addresses found for appointments");
       return;
@@ -680,7 +705,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
-      console.log("[Markers] Calculating route with", routePoints.length, "points and user location");
+      console.log(
+        "[Markers] Calculating route with",
+        routePoints.length,
+        "points and user location"
+      );
       await calculateAndDisplayRoute(userLocation.position, routePoints);
     } else {
       if (!showRoute) {
@@ -703,6 +732,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         bounds: bounds,
         padding: 80,
         maxZoom: 15,
+        minZoom: 1, // ADD THIS: Enforce minimum zoom
       });
     }
   };
@@ -716,7 +746,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
-    console.log("[Route] Calculating route from user location through", routePoints.length, "points");
+    console.log(
+      "[Route] Calculating route from user location through",
+      routePoints.length,
+      "points"
+    );
     setIsCalculatingRoute(true);
 
     routeSourceRef.current.clear();
@@ -728,8 +762,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
         routePoints
       );
 
-      if (result && result.routeCoordinates && result.routeCoordinates.length > 0) {
-        console.log("[Route] ✓ Route calculated successfully -", result.routeCoordinates.length, "coordinates");
+      if (
+        result &&
+        result.routeCoordinates &&
+        result.routeCoordinates.length > 0
+      ) {
+        console.log(
+          "[Route] ✓ Route calculated successfully -",
+          result.routeCoordinates.length,
+          "coordinates"
+        );
         setRouteData(result);
 
         const routeFeature = new atlas.data.Feature(
@@ -742,7 +784,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         routeSourceRef.current.clear();
         routeSourceRef.current.add(routeFeature);
-        
+
         console.log("[Route] ✓ Route displayed on map");
       } else {
         console.warn("[Route] ⚠ No valid route coordinates returned");
@@ -816,7 +858,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 disabled={isCalculatingRoute}
               />
               <span className="route-toggle-label">
-                {isCalculatingRoute ? "🔄 Calculating Route..." : "🗺️ Show Route"}
+                {isCalculatingRoute
+                  ? "🔄 Calculating Route..."
+                  : "🗺️ Show Route"}
               </span>
             </label>
             {routeData && showRoute && !isCalculatingRoute && (
@@ -832,7 +876,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
             {isCalculatingRoute && (
               <div className="route-calculating-indicator">
                 <div className="route-calculating-spinner"></div>
-                <span className="route-calculating-text">Optimizing route...</span>
+                <span className="route-calculating-text">
+                  Optimizing route...
+                </span>
               </div>
             )}
           </div>

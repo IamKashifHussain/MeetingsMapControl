@@ -916,3 +916,173 @@
     background: linear-gradient(135deg, #1a1d23 0%, #2d3139 100%);
   }
 }
+/* ============================================
+   Azure Maps Controls - Visibility Fix
+   ============================================ */
+
+/* Make sure control containers are visible */
+.atlas-control {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Zoom Control */
+.atlas-control-zoom {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.atlas-control-zoom button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.atlas-control-zoom button:last-child {
+  border-bottom: none;
+}
+
+.atlas-control-zoom button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+/* Compass Control */
+.atlas-control-compass {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.atlas-control-compass button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.atlas-control-compass button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+/* Pitch Control */
+.atlas-control-pitch {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.atlas-control-pitch button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.atlas-control-pitch button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+/* Style Control */
+.atlas-control-style {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-top: 8px;
+  max-width: 120px;
+}
+
+.atlas-control-style .atlas-control-style-button {
+  padding: 8px 12px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #e9ecef;
+  width: 100%;
+  text-align: center;
+}
+
+.atlas-control-style .atlas-control-style-button:last-child {
+  border-bottom: none;
+}
+
+.atlas-control-style .atlas-control-style-button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+.atlas-control-style .atlas-control-style-button.atlas-control-style-button-active {
+  background: #667eea;
+  color: white;
+  font-weight: 600;
+}
+
+/* Ensure controls container has proper z-index and positioning */
+.atlas-map-controls-container {
+  z-index: 100;
+  pointer-events: auto;
+}
+
+/* Dark mode support for controls */
+@media (prefers-color-scheme: dark) {
+  .atlas-control-zoom,
+  .atlas-control-compass,
+  .atlas-control-pitch,
+  .atlas-control-style {
+    background: #2d3139;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .atlas-control-zoom button,
+  .atlas-control-compass button,
+  .atlas-control-pitch button,
+  .atlas-control-style .atlas-control-style-button {
+    background: #2d3139;
+    color: #e9ecef;
+    border-color: #495057;
+  }
+
+  .atlas-control-zoom button:hover,
+  .atlas-control-compass button:hover,
+  .atlas-control-pitch button:hover,
+  .atlas-control-style .atlas-control-style-button:hover {
+    background: #343840;
+    color: #667eea;
+  }
+
+  .atlas-control-style .atlas-control-style-button.atlas-control-style-button-active {
+    background: #667eea;
+    color: white;
+  }
+}
