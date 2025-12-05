@@ -1,4 +1,4 @@
-// MapComponent.tsx - With route toggle and filter-aware routing
+// MapComponent.tsx - Part 1 of 2
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
@@ -203,12 +203,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         setIsLoading(false);
         
-        // Geocode user location first
         if (currentUserAddress) {
           await geocodeAndDisplayUserLocation();
         }
         
-        // Then update markers (which will calculate route if user location exists)
         await updateMarkers();
       });
 
@@ -321,7 +319,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     console.log("[User Location] Geocoding user address:", currentUserAddress);
 
-    // Remove existing user marker
     if (userMarkerRef.current) {
       map.markers.remove(userMarkerRef.current);
       userMarkerRef.current = null;
@@ -351,7 +348,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       map.markers.add(userMarker);
       userMarkerRef.current = userMarker;
 
-      // Recalculate route with new user location if we have appointments
       if (appointments.length > 0) {
         console.log("[User Location] Triggering marker update to recalculate route");
         await updateMarkers();
@@ -454,6 +450,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     div.textContent = text;
     return div.innerHTML;
   };
+  // MapComponent.tsx - Part 2 of 2
 
   // ============= Popup Content Methods =============
   const createUserPopupContent = (userName: string, address: string): string => {
@@ -568,28 +565,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
     console.log("[Markers] Route display:", showRoute ? "enabled" : "disabled");
     console.log("[Markers] User location available:", !!userLocation?.position);
 
-    // Close any open popup
     popup.close();
 
-    // Clear existing markers
     markersRef.current.forEach((markerInfo) => {
       map.markers.remove(markerInfo.marker);
     });
     markersRef.current = [];
 
-    // Clear route immediately when starting to update markers
     if (routeSourceRef.current) {
       routeSourceRef.current.clear();
     }
     setRouteData(null);
 
-    // If no appointments, ensure everything is cleared and exit
     if (appointments.length === 0) {
       console.log("[Markers] No appointments to display");
       return;
     }
 
-    // Fetch addresses for all appointments
     const addressPromises = appointments.map(async (appt) => {
       if (!appt.regardingobjectid) return null;
       const address = await fetchRegardingAddress(appt.regardingobjectid);
@@ -603,7 +595,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
-    // Group appointments by address
     const addressMap = new Map<string, AppointmentRecord[]>();
     for (const result of addressResults) {
       if (result && result.address) {
@@ -616,7 +607,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     const uniqueAddresses = Array.from(addressMap.keys());
     
-    // If no valid addresses found, clear everything and exit
     if (uniqueAddresses.length === 0) {
       console.log("[Markers] No valid addresses found for appointments");
       return;
@@ -624,7 +614,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     console.log("[Markers] Found", uniqueAddresses.length, "unique addresses");
 
-    // Batch geocode all addresses
     const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
 
     if (abortControllerRef.current?.signal.aborted) {
@@ -636,7 +625,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     let markerCount = 0;
     const routePoints: RoutePoint[] = [];
 
-    // Sort addresses by earliest appointment time
     const sortedAddresses = uniqueAddresses.sort((a, b) => {
       const apptA = addressMap.get(a)?.[0];
       const apptB = addressMap.get(b)?.[0];
@@ -644,7 +632,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return apptA.scheduledstart.getTime() - apptB.scheduledstart.getTime();
     });
 
-    // Create markers for each location
     for (const address of sortedAddresses) {
       const appts = addressMap.get(address);
       const position = geocodeResults.get(address);
@@ -683,17 +670,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     console.log("[Markers] Created", markerCount, "markers");
 
-    // Add user location to positions for camera bounds
     if (userLocation?.position) {
       positions.push(userLocation.position);
     }
 
-    // Calculate and display route ONLY if showRoute is enabled
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
       console.log("[Markers] Calculating route with", routePoints.length, "points and user location");
       await calculateAndDisplayRoute(userLocation.position, routePoints);
     } else {
-      // Explicitly clear route if conditions aren't met
       if (!showRoute) {
         console.log("[Markers] Route display disabled by user");
       } else if (!userLocation?.position) {
@@ -707,7 +691,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setRouteData(null);
     }
 
-    // Adjust camera to fit all markers
     if (positions.length > 0) {
       setErrorMessage("");
       const bounds = atlas.data.BoundingBox.fromPositions(positions);
@@ -730,7 +713,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     console.log("[Route] Calculating route from user location through", routePoints.length, "points");
 
-    // Clear existing route before calculating new one
     routeSourceRef.current.clear();
     setRouteData(null);
 
@@ -804,105 +786,109 @@ const MapComponent: React.FC<MapComponentProps> = ({
   // ============= Main Render =============
   return (
     <div className="appointment-azure-map-container">
-      {/* Filter Controls Bar */}
-      <div className="filter-controls-bar">
-        <div className="user-info-section">
-          <div className="user-info-label">Showing appointments for</div>
-          <div className="user-info-name">👤 {currentUserName}</div>
-        </div>
+      {/* Filter Controls Wrapper - Above the map */}
+      <div className="filter-controls-wrapper">
+        <div className="filter-controls-bar">
+          <div className="user-info-section">
+            <div className="user-info-label">Showing appointments for</div>
+            <div className="user-info-name">👤 {currentUserName}</div>
+          </div>
 
-        <div className="filter-section">
-          <label className="filter-label">Due</label>
-          <select
-            value={currentFilter.dueFilter}
-            onChange={handleDueFilterChange}
-            className="filter-select"
-          >
-            <option value="all">All</option>
-            <option value="overdue">Overdue</option>
-            <option value="today">Today or earlier</option>
-            <option value="tomorrow">Tomorrow or earlier</option>
-            <option value="next7days">Next 7 days or earlier</option>
-            <option value="next30days">Next 30 days or earlier</option>
-            <option value="next90days">Next 90 days or earlier</option>
-            <option value="next6months">Next 6 months or earlier</option>
-            <option value="next12months">Next 12 months or earlier</option>
-          </select>
-        </div>
+          <div className="filter-section">
+            <label className="filter-label">Due</label>
+            <select
+              value={currentFilter.dueFilter}
+              onChange={handleDueFilterChange}
+              className="filter-select"
+            >
+              <option value="all">All</option>
+              <option value="overdue">Overdue</option>
+              <option value="today">Today or earlier</option>
+              <option value="tomorrow">Tomorrow or earlier</option>
+              <option value="next7days">Next 7 days or earlier</option>
+              <option value="next30days">Next 30 days or earlier</option>
+              <option value="next90days">Next 90 days or earlier</option>
+              <option value="next6months">Next 6 months or earlier</option>
+              <option value="next12months">Next 12 months or earlier</option>
+            </select>
+          </div>
 
-        <div className="search-section">
-          <label className="filter-label">Search</label>
-          <input
-            type="text"
-            placeholder="Search appointments..."
-            value={searchText}
-            onChange={handleSearchChange}
-            className="search-input"
-          />
-        </div>
-
-        <div className="route-toggle-section">
-          <label className="route-toggle-container">
+          <div className="search-section">
+            <label className="filter-label">Search</label>
             <input
-              type="checkbox"
-              checked={showRoute}
-              onChange={handleRouteToggleClick}
-              className="route-toggle-checkbox"
+              type="text"
+              placeholder="Search appointments..."
+              value={searchText}
+              onChange={handleSearchChange}
+              className="search-input"
             />
-            <span className="route-toggle-label">🗺️ Show Route</span>
-          </label>
-          {routeData && showRoute && (
-            <div className="route-info">
-              <span className="route-info-item">
-                📏 {(routeData.totalDistance / 1000).toFixed(1)} km
-              </span>
-              <span className="route-info-item">
-                ⏱️ {Math.round(routeData.totalDuration / 60)} min
-              </span>
-            </div>
-          )}
-        </div>
+          </div>
 
-        <div className="action-section">
-          <button onClick={handleRefreshClick} className="refresh-button">
-            🔄 Refresh
-          </button>
-          <div className="appointment-count">
-            {appointments.length} of {allAppointmentsCount}
+          <div className="route-toggle-section">
+            <label className="route-toggle-container">
+              <input
+                type="checkbox"
+                checked={showRoute}
+                onChange={handleRouteToggleClick}
+                className="route-toggle-checkbox"
+              />
+              <span className="route-toggle-label">🗺️ Show Route</span>
+            </label>
+            {routeData && showRoute && (
+              <div className="route-info">
+                <span className="route-info-item">
+                  📏 {(routeData.totalDistance / 1000).toFixed(1)} km
+                </span>
+                <span className="route-info-item">
+                  ⏱️ {Math.round(routeData.totalDuration / 60)} min
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="action-section">
+            <button onClick={handleRefreshClick} className="refresh-button">
+              🔄 Refresh
+            </button>
+            <div className="appointment-count">
+              {appointments.length} of {allAppointmentsCount}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Map Container */}
-      <div ref={mapRef} className="map-container">
-        {/* No Results Message */}
-        {!isLoading && !errorMessage && appointments.length === 0 && (
-          <div className="overlay-message no-appointments-overlay">
-            <div className="no-appointments-icon">📅</div>
-            <h3 className="no-appointments-title">No Appointments Found</h3>
-            <p className="no-appointments-message">
-              {allAppointmentsCount === 0
-                ? "No appointments available."
-                : "No appointments match the current filter criteria."}
-            </p>
-          </div>
-        )}
+      {/* Map Content Wrapper - Takes remaining space */}
+      <div className="map-content-wrapper">
+        <div ref={mapRef} className="map-container">
+          {/* No Results Message */}
+          {!isLoading && !errorMessage && appointments.length === 0 && (
+            <div className="overlay-message no-appointments-overlay">
+              <div className="no-appointments-icon">📅</div>
+              <h3 className="no-appointments-title">No Appointments Found</h3>
+              <p className="no-appointments-message">
+                {allAppointmentsCount === 0
+                  ? "No appointments available."
+                  : "No appointments match the current filter criteria."}
+              </p>
+            </div>
+          )}
 
-        {/* Loading Indicator */}
-        {isLoading && (
-          <div className="loading-overlay">
-            <div className="loading-spinner" />
-            <p className="loading-text">Loading your appointments...</p>
-          </div>
-        )}
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="loading-overlay">
+              <div className="loading-spinner" />
+              <p className="loading-text">Loading your appointments...</p>
+            </div>
+          )}
 
-        {/* Error Message */}
-        {errorMessage && (
-          <div className="error-overlay">
-            <h3 className="error-title">⚠️ Configuration Required</h3>
-            <p className="error-message">{errorMessage}</p>
-          </div>
-        )}
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="error-overlay">
+              <h3 className="error-title">⚠️ Configuration Required</h3>
+              <p className="error-message">{errorMessage}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

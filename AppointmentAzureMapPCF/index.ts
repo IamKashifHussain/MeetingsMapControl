@@ -53,7 +53,6 @@ export class AppointmentAzureMapPCF
     void this.initializeData(context);
 
   }
-
   
   private async initializeData(
     context: ComponentFramework.Context<IInputs>
