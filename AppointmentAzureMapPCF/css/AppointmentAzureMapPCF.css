@@ -425,3 +425,1106 @@
   will-change: transform;
   backface-visibility: hidden;
 }
+
+/* ============================================
+   Enhanced Appointment Azure Map PCF Styles
+   Modern, Clean, Professional Design
+   ============================================ */
+
+/* Root container - Flexbox layout */
+.appointment-azure-map-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  background: #f8f9fa;
+  overflow: hidden;
+}
+
+/* Filter Controls Wrapper - Fixed height container */
+.filter-controls-wrapper {
+  flex: 0 0 auto;
+  padding: 16px;
+  background: #f8f9fa;
+  z-index: 1000;
+}
+
+/* ============================================
+   Filter Controls Bar - Modern Glassmorphism
+   ============================================ */
+.filter-controls-bar {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  padding: 16px 20px;
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.filter-controls-bar:hover {
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   User Info Section - Enhanced Styling
+   ============================================ */
+.user-info-section {
+  flex: 0 0 auto;
+  padding: 4px 0;
+}
+
+.user-info-label {
+  font-size: 10px;
+  color: #6c757d;
+  margin-bottom: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-info-name {
+  font-size: 15px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ============================================
+   Filter Controls - Modern Input Styling
+   ============================================ */
+.filter-section,
+.filter-due-section {
+  flex: 0 0 auto;
+  min-width: 200px;
+}
+
+.filter-label {
+  font-size: 10px;
+  color: #6c757d;
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 14px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 500;
+  color: #495057;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23495057' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.filter-select:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+/* ============================================
+   Route Toggle Section - Fixed Layout
+   ============================================ */
+.route-toggle-section {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Single placeholder that shows either calculating or route info */
+.route-status-placeholder {
+  min-width: 250px; /* Reserve space for both states */
+  display: flex;
+  align-items: center;
+}
+
+/* Toggle Button - Always visible on left */
+.route-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.route-toggle-container:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.route-toggle-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #667eea;
+  border-radius: 4px;
+}
+
+.route-toggle-label {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Route Calculating Indicator - Shows in same position as route info */
+.route-calculating-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  animation: fadeIn 0.3s ease-out;
+  white-space: nowrap;
+}
+
+.route-calculating-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.route-calculating-text {
+  flex-shrink: 0;
+}
+
+/* Route Info - Shows in same position as calculating indicator */
+.route-info {
+  display: flex;
+  gap: 10px;
+  flex-wrap: nowrap;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.route-info-item {
+  font-size: 12px;
+  color: #495057;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(102, 126, 234, 0.1);
+  white-space: nowrap;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Actions Section - Modern Buttons
+   ============================================ */
+.actions-section,
+.action-section {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.refresh-button {
+  padding: 10px 20px;
+  font-size: 14px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.refresh-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.refresh-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.refresh-button:disabled {
+  background: linear-gradient(135deg, #adb5bd 0%, #6c757d 100%);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.appointment-counter,
+.appointment-count {
+  font-size: 13px;
+  color: #6c757d;
+  font-weight: 600;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 10px;
+  white-space: nowrap;
+  border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+/* ============================================
+   Map Container - Takes remaining space
+   ============================================ */
+.map-content-wrapper {
+  flex: 1 1 auto;
+  position: relative;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================
+   Loading Overlay - Modern Spinner
+   ============================================ */
+.loading-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(10px);
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  z-index: 1000;
+  animation: fadeInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-right: 4px solid #764ba2;
+  border-radius: 50%;
+  animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.loading-text {
+  margin: 0;
+  color: #495057;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ============================================
+   Error Overlay - Enhanced Design
+   ============================================ */
+.error-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  max-width: 450px;
+  z-index: 1000;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid #ff6b6b;
+}
+
+.error-title {
+  color: #d13438;
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.error-message {
+  color: #6c757d;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   Empty State - Modern Design
+   ============================================ */
+.empty-state-overlay,
+.no-appointments-overlay,
+.overlay-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 50px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  max-width: 450px;
+  z-index: 1000;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.empty-state-icon,
+.no-appointments-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.empty-state-title,
+.no-appointments-title {
+  color: #212529;
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.empty-state-message,
+.no-appointments-message {
+  color: #6c757d;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ============================================
+   User Popup - Enhanced Design
+   ============================================ */
+.user-popup-container {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-width: 300px;
+  padding: 20px;
+}
+
+.user-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid;
+  border-image: linear-gradient(90deg, #00d4ff 0%, #667eea 100%) 1;
+}
+
+.user-popup-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 4px rgba(0, 212, 255, 0.3));
+}
+
+.user-popup-title {
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.user-popup-field {
+  margin-bottom: 12px;
+}
+
+.user-popup-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.user-popup-field-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.user-popup-address {
+  font-size: 14px;
+  color: #495057;
+  line-height: 1.6;
+  margin-top: 4px;
+}
+
+/* ============================================
+   Appointment Popup - Modern Card Design with Scrolling
+   ============================================ */
+.appointment-popup-container {
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-width: 340px;
+  max-width: 420px;
+  max-height: 450px;
+  display: flex;
+  flex-direction: column;
+}
+
+.appointment-popup-badge {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  flex-shrink: 0;
+}
+
+.appointment-popup-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 500px;
+}
+
+/* Custom scrollbar for appointment list */
+.appointment-popup-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.appointment-popup-list::-webkit-scrollbar-track {
+  background: #f1f3f5;
+  border-radius: 4px;
+}
+
+.appointment-popup-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+.appointment-popup-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.appointment-popup-item {
+  padding: 20px;
+  flex-shrink: 0;
+}
+
+.appointment-popup-item-separator {
+  border-top: 2px solid #e9ecef;
+}
+
+.appointment-popup-subject {
+  font-size: 17px;
+  font-weight: 700;
+  color: #212529;
+  margin: 0 0 14px 0;
+  line-height: 1.4;
+}
+
+.appointment-popup-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.appointment-popup-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #495057;
+  padding: 8px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.appointment-popup-detail-row:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
+}
+
+.appointment-popup-detail-icon {
+  font-size: 18px;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.appointment-popup-detail-text {
+  font-weight: 600;
+}
+
+.appointment-popup-regarding {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.appointment-popup-regarding-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.appointment-popup-regarding-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #212529;
+}
+
+.appointment-popup-description {
+  font-size: 14px;
+  color: #495057;
+  line-height: 1.6;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border-left: 4px solid #764ba2;
+}
+
+/* ============================================
+   Azure Maps Marker Animation
+   ============================================ */
+.atlas-html-marker {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.atlas-html-marker:hover {
+  transform: scale(1.15) translateY(-4px);
+  z-index: 100;
+  filter: drop-shadow(0 8px 16px rgba(102, 126, 234, 0.4));
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, calc(-50% + 30px));
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+@media (max-width: 1200px) {
+  .filter-controls-wrapper {
+    padding: 12px;
+  }
+
+  .filter-controls-bar {
+    gap: 12px;
+  }
+
+  .filter-section,
+  .filter-due-section {
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 992px) {
+  .filter-controls-wrapper {
+    padding: 10px;
+  }
+
+  .filter-controls-bar {
+    padding: 14px 16px;
+  }
+
+  .route-info {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-controls-wrapper {
+    padding: 8px;
+  }
+
+  .filter-controls-bar {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .filter-section,
+  .filter-due-section,
+  .route-toggle-section {
+    flex: 1 1 100%;
+    min-width: auto;
+  }
+
+  .actions-section,
+  .action-section {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .appointment-popup-container {
+    min-width: 280px;
+    max-width: 320px;
+  }
+
+  .loading-overlay,
+  .error-overlay,
+  .empty-state-overlay {
+    padding: 30px;
+    max-width: 90%;
+  }
+}
+
+@media (max-width: 480px) {
+  .appointment-azure-map-container {
+    min-height: 400px;
+  }
+
+  .filter-controls-wrapper {
+    padding: 6px;
+  }
+
+  .filter-controls-bar {
+    border-radius: 12px;
+  }
+
+  .filter-select {
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+
+  .refresh-button {
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+
+  .appointment-popup-container {
+    min-width: 260px;
+  }
+
+  .appointment-popup-item {
+    padding: 16px;
+  }
+}
+
+/* ============================================
+   Accessibility
+   ============================================ */
+.filter-controls-bar:focus-within {
+  outline: 3px solid rgba(102, 126, 234, 0.5);
+  outline-offset: 2px;
+}
+
+.filter-select:focus,
+.refresh-button:focus,
+.route-toggle-checkbox:focus {
+  outline: none;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   High Contrast Mode
+   ============================================ */
+@media (prefers-contrast: high) {
+  .filter-controls-bar {
+    border: 3px solid #000;
+  }
+
+  .filter-select {
+    border-width: 3px;
+  }
+
+  .refresh-button {
+    border: 2px solid #000;
+  }
+}
+
+/* ============================================
+   Dark Mode Support
+   ============================================ */
+@media (prefers-color-scheme: dark) {
+  .appointment-azure-map-container {
+    background: #1a1d23;
+  }
+
+  .filter-controls-bar {
+    background: rgba(30, 33, 39, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .user-info-label,
+  .filter-label {
+    color: #adb5bd;
+  }
+
+  .filter-select {
+    background: #2d3139;
+    border-color: #495057;
+    color: #e9ecef;
+  }
+
+  .filter-select:hover {
+    border-color: #667eea;
+    background: #343840;
+  }
+
+  .route-toggle-label {
+    color: #e9ecef;
+  }
+
+  .route-info-item {
+    background: linear-gradient(135deg, #2d3139 0%, #343840 100%);
+    color: #e9ecef;
+  }
+
+  .appointment-count {
+    background: linear-gradient(135deg, #2d3139 0%, #343840 100%);
+    color: #adb5bd;
+  }
+
+  .loading-overlay,
+  .empty-state-overlay {
+    background: rgba(30, 33, 39, 0.98);
+  }
+
+  .loading-text,
+  .empty-state-title,
+  .no-appointments-title {
+    color: #e9ecef;
+  }
+
+  .empty-state-message,
+  .no-appointments-message {
+    color: #adb5bd;
+  }
+
+  .error-overlay {
+    background: #2d3139;
+    border-color: #ff6b6b;
+  }
+
+  .error-message {
+    color: #adb5bd;
+  }
+
+  .user-popup-container,
+  .appointment-popup-container {
+    background: #2d3139;
+  }
+
+  .user-popup-field-value,
+  .appointment-popup-subject,
+  .appointment-popup-regarding-value {
+    color: #e9ecef;
+  }
+
+  .user-popup-address,
+  .appointment-popup-detail-text,
+  .appointment-popup-description {
+    color: #adb5bd;
+  }
+
+  .appointment-popup-detail-row {
+    background: #1a1d23;
+  }
+
+  .appointment-popup-detail-row:hover {
+    background: #343840;
+  }
+
+  .appointment-popup-regarding,
+  .appointment-popup-description {
+    background: linear-gradient(135deg, #1a1d23 0%, #2d3139 100%);
+  }
+}
+/* ============================================
+   Azure Maps Controls - Visibility Fix
+   ============================================ */
+
+/* Make sure control containers are visible */
+.atlas-control {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Zoom Control */
+.atlas-control-zoom {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.atlas-control-zoom button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+}
+
+.atlas-control-zoom button:last-child {
+  border-bottom: none;
+}
+
+.atlas-control-zoom button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+/* Compass Control */
+.atlas-control-compass {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.atlas-control-compass button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.atlas-control-compass button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+/* Pitch Control */
+.atlas-control-pitch {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.atlas-control-pitch button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.atlas-control-pitch button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+/* Style Control */
+.atlas-control-style {
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin-top: 8px;
+  max-width: 120px;
+}
+
+.atlas-control-style .atlas-control-style-button {
+  padding: 8px 12px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #e9ecef;
+  width: 100%;
+  text-align: center;
+}
+
+.atlas-control-style .atlas-control-style-button:last-child {
+  border-bottom: none;
+}
+
+.atlas-control-style .atlas-control-style-button:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+
+.atlas-control-style .atlas-control-style-button.atlas-control-style-button-active {
+  background: #667eea;
+  color: white;
+  font-weight: 600;
+}
+
+/* Ensure controls container has proper z-index and positioning */
+.atlas-map-controls-container {
+  z-index: 100;
+  pointer-events: auto;
+}
+
+/* Dark mode support for controls */
+@media (prefers-color-scheme: dark) {
+  .atlas-control-zoom,
+  .atlas-control-compass,
+  .atlas-control-pitch,
+  .atlas-control-style {
+    background: #2d3139;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .atlas-control-zoom button,
+  .atlas-control-compass button,
+  .atlas-control-pitch button,
+  .atlas-control-style .atlas-control-style-button {
+    background: #2d3139;
+    color: #e9ecef;
+    border-color: #495057;
+  }
+
+  .atlas-control-zoom button:hover,
+  .atlas-control-compass button:hover,
+  .atlas-control-pitch button:hover,
+  .atlas-control-style .atlas-control-style-button:hover {
+    background: #343840;
+    color: #667eea;
+  }
+
+  .atlas-control-style .atlas-control-style-button.atlas-control-style-button-active {
+    background: #667eea;
+    color: white;
+  }
+}

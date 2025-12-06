@@ -2,7 +2,7 @@
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
-import "./MapComponent.css";
+import "./css/AppointmentAzureMapPCF.css";
 import { IInputs } from "./generated/ManifestTypes";
 import {
   AppointmentRecord,
@@ -828,7 +828,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             <div className="user-info-label">Showing appointments for</div>
             <div className="user-info-name">👤 {currentUserName}</div>
           </div>
-
           <div className="filter-section">
             <label className="filter-label">Due</label>
             <select
@@ -847,7 +846,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <option value="next12months">Next 12 months or earlier</option>
             </select>
           </div>
-
+         
           <div className="route-toggle-section">
             <label className="route-toggle-container">
               <input
@@ -857,32 +856,29 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 className="route-toggle-checkbox"
                 disabled={isCalculatingRoute}
               />
-              <span className="route-toggle-label">
-                {isCalculatingRoute
-                  ? "🔄 Calculating Route..."
-                  : "🗺️ Show Route"}
-              </span>
+              <span className="route-toggle-label">🗺️ Show Route</span>
             </label>
-            {routeData && showRoute && !isCalculatingRoute && (
-              <div className="route-info">
-                <span className="route-info-item">
-                  📏 {(routeData.totalDistance / 1000).toFixed(1)} km
-                </span>
-                <span className="route-info-item">
-                  ⏱️ {Math.round(routeData.totalDuration / 60)} min
-                </span>
-              </div>
-            )}
-            {isCalculatingRoute && (
-              <div className="route-calculating-indicator">
-                <div className="route-calculating-spinner"></div>
-                <span className="route-calculating-text">
-                  Optimizing route...
-                </span>
-              </div>
-            )}
-          </div>
 
+            <div className="route-status-placeholder">
+              {isCalculatingRoute ? (
+                <div className="route-calculating-indicator">
+                  <div className="route-calculating-spinner"></div>
+                  <span className="route-calculating-text">
+                    Optimizing route...
+                  </span>
+                </div>
+              ) : routeData && showRoute ? (
+                <div className="route-info">
+                  <span className="route-info-item">
+                    📏 {(routeData.totalDistance / 1000).toFixed(1)} km
+                  </span>
+                  <span className="route-info-item">
+                    ⏱️ {Math.round(routeData.totalDuration / 60)} min
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          </div>
           <div className="action-section">
             <button onClick={handleRefreshClick} className="refresh-button">
               🔄 Refresh
