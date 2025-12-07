@@ -34,7 +34,7 @@ export class AppointmentAzureMapPCF
   private currentUserId = "";
   private currentUserName = "";
 
-  private showRoute = true;
+  private showRoute = false;
 
   public init(
     context: ComponentFramework.Context<IInputs>,
