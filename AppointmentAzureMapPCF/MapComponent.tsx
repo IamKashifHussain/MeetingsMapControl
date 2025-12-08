@@ -114,7 +114,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       !isLoading &&
       showRoute
     ) {
-      console.log("[Route] User location available - recalculating route");
       void updateMarkers();
     }
   }, [userLocation]);
@@ -168,8 +167,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         language: "en-US",
         showFeedbackLink: false,
         showLogo: false,
-        minZoom: 1, // ADD THIS: Minimum zoom level
-        maxZoom: 20, // ADD THIS: Maximum zoom level
+        minZoom: 1, 
+        maxZoom: 20,
       });
 
       mapInstanceRef.current = map;
@@ -215,7 +214,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
           }
         );
 
-        // ADD THIS: Set map bounds to prevent excessive zooming
         map.setCamera({
           bounds: [-180, -85, 180, 85],
           padding: 0,
@@ -333,11 +331,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const popup = popupRef.current;
 
     if (!map || !popup || !currentUserAddress) {
-      console.log("[User Location] Cannot geocode - missing dependencies");
       return;
     }
-
-    console.log("[User Location] Geocoding user address:", currentUserAddress);
 
     if (userMarkerRef.current) {
       map.markers.remove(userMarkerRef.current);
@@ -347,7 +342,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const position = await geocodeAddress(currentUserAddress);
 
     if (position) {
-      console.log("[User Location] ✓ User position geocoded:", position);
       const newUserLocation = { address: currentUserAddress, position };
       setUserLocation(newUserLocation);
 
@@ -369,9 +363,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       userMarkerRef.current = userMarker;
 
       if (appointments.length > 0) {
-        console.log(
-          "[User Location] Triggering marker update to recalculate route"
-        );
         await updateMarkers();
       }
     } else {
@@ -583,17 +574,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const popup = popupRef.current;
 
     if (!map || !popup) {
-      console.log("[Markers] Cannot update - map or popup not ready");
       return;
     }
-
-    console.log(
-      "[Markers] Starting marker update with",
-      appointments.length,
-      "appointments"
-    );
-    console.log("[Markers] Route display:", showRoute ? "enabled" : "disabled");
-    console.log("[Markers] User location available:", !!userLocation?.position);
 
     popup.close();
 
@@ -608,7 +590,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setRouteData(null);
 
     if (appointments.length === 0) {
-      console.log("[Markers] No appointments to display");
       return;
     }
 
@@ -621,7 +602,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const addressResults = await Promise.all(addressPromises);
 
     if (abortControllerRef.current?.signal.aborted) {
-      console.log("[Markers] Update aborted");
       return;
     }
 
@@ -638,16 +618,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const uniqueAddresses = Array.from(addressMap.keys());
 
     if (uniqueAddresses.length === 0) {
-      console.log("[Markers] No valid addresses found for appointments");
       return;
     }
-
-    console.log("[Markers] Found", uniqueAddresses.length, "unique addresses");
 
     const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
 
     if (abortControllerRef.current?.signal.aborted) {
-      console.log("[Markers] Update aborted after geocoding");
       return;
     }
 
@@ -698,27 +674,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    console.log("[Markers] Created", markerCount, "markers");
-
     if (userLocation?.position) {
       positions.push(userLocation.position);
     }
 
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
-      console.log(
-        "[Markers] Calculating route with",
-        routePoints.length,
-        "points and user location"
-      );
       await calculateAndDisplayRoute(userLocation.position, routePoints);
     } else {
-      if (!showRoute) {
-        console.log("[Markers] Route display disabled by user");
-      } else if (!userLocation?.position) {
-        console.log("[Markers] No route - user location not available yet");
-      } else {
-        console.log("[Markers] No route - no route points");
-      }
       if (routeSourceRef.current) {
         routeSourceRef.current.clear();
       }
@@ -732,7 +694,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         bounds: bounds,
         padding: 80,
         maxZoom: 15,
-        minZoom: 1, // ADD THIS: Enforce minimum zoom
+        minZoom: 1,
       });
     }
   };
@@ -742,15 +704,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     routePoints: RoutePoint[]
   ) => {
     if (!routeServiceRef.current || !routeSourceRef.current) {
-      console.log("[Route] Cannot calculate - service or source not ready");
       return;
     }
 
-    console.log(
-      "[Route] Calculating route from user location through",
-      routePoints.length,
-      "points"
-    );
     setIsCalculatingRoute(true);
 
     routeSourceRef.current.clear();
@@ -767,11 +723,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         result.routeCoordinates &&
         result.routeCoordinates.length > 0
       ) {
-        console.log(
-          "[Route] ✓ Route calculated successfully -",
-          result.routeCoordinates.length,
-          "coordinates"
-        );
         setRouteData(result);
 
         const routeFeature = new atlas.data.Feature(
@@ -784,8 +735,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         routeSourceRef.current.clear();
         routeSourceRef.current.add(routeFeature);
-
-        console.log("[Route] ✓ Route displayed on map");
       } else {
         console.warn("[Route] ⚠ No valid route coordinates returned");
         routeSourceRef.current.clear();
@@ -808,13 +757,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   const handleRefreshClick = () => {
-    console.log("[UI] Refresh button clicked");
     onRefresh();
   };
 
   const handleRouteToggleClick = () => {
     const newShowRoute = !showRoute;
-    console.log("[UI] Route toggle clicked - new state:", newShowRoute);
     onRouteToggle(newShowRoute);
   };
 

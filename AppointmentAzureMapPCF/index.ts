@@ -96,7 +96,7 @@ export class AppointmentAzureMapPCF
             if (us?.userId) userId = us.userId;
           }
         } catch (xrmError) {
-          console.log("[User ID] Xrm not available:", xrmError);
+          // Xrm not available
         }
       }
 
@@ -126,8 +126,6 @@ export class AppointmentAzureMapPCF
 
       if (result.entities.length > 0) {
         this.azureMapsKey = result.entities[0].ti_azuremapskey ?? "";
-      } else {
-        console.warn("[Config] No configuration found.");
       }
     } catch (error) {
       console.error("[Config] Azure Maps Key Error:", error);
@@ -153,7 +151,7 @@ export class AppointmentAzureMapPCF
         this.currentUserName = user.fullname ?? "Current User";
         return;
       } catch (retrieveError) {
-        console.log("[User Fetch] retrieveRecord failed:", retrieveError);
+        // retrieveRecord failed, try retrieveMultipleRecords
       }
 
       try {
@@ -167,7 +165,7 @@ export class AppointmentAzureMapPCF
           this.currentUserName = result.entities[0].fullname ?? "Current User";
         }
       } catch (multipleError) {
-        console.log("[User Fetch] retrieveMultipleRecords failed:", multipleError);
+        // retrieveMultipleRecords failed
       }
     } catch (error) {
       console.error("[User Fetch] Unexpected error:", error);
@@ -408,7 +406,6 @@ export class AppointmentAzureMapPCF
     this.getUserId(context);
 
     if (previous !== this.currentUserId && this.currentUserId) {
-      console.log("[Update] User changed → Reloading data...");
       void this.initializeData(context);
     }
   }
