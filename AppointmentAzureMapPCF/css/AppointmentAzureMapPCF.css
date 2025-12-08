@@ -1,5 +1,5 @@
 /* ============================================
-   AppointmentAzureMapPCF.css
+   AppointmentAzureMapPCF.css - PART 1 OF 3
    Main PCF Container Styles
    ============================================ */
 
@@ -255,63 +255,6 @@
 }
 
 /* ============================================
-   Dark Mode Support for Power Apps
-   ============================================ */
-@media (prefers-color-scheme: dark) {
-  .pcf-appointment-map-root {
-    background: #1a1d23;
-  }
-
-  .pcf-loading-container,
-  .pcf-error-container {
-    background: #1a1d23;
-  }
-
-  .pcf-loading-content,
-  .pcf-error-content {
-    background: #2d3139;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-
-  .pcf-loading-spinner {
-    border-color: #495057;
-    border-top-color: #667eea;
-  }
-
-  .pcf-loading-text {
-    color: #e9ecef;
-  }
-
-  .pcf-error-content {
-    border-color: #ff6b6b;
-  }
-
-  .pcf-error-title {
-    color: #ff8787;
-  }
-
-  .pcf-error-message {
-    color: #adb5bd;
-  }
-
-  .pcf-config-error {
-    border-color: #ffd43b;
-  }
-
-  .pcf-config-error .pcf-error-title {
-    color: #ffd43b;
-  }
-
-  .pcf-user-error {
-    border-color: #4dabf7;
-  }
-
-  .pcf-user-error .pcf-error-title {
-    color: #4dabf7;
-  }
-}
-
-/* ============================================
    Print Styles
    ============================================ */
 @media print {
@@ -427,8 +370,8 @@
 }
 
 /* ============================================
+   AppointmentAzureMapPCF.css - PART 2 OF 3
    Enhanced Appointment Azure Map PCF Styles
-   Modern, Clean, Professional Design
    ============================================ */
 
 /* Root container - Flexbox layout */
@@ -559,6 +502,7 @@
   box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
   transform: translateY(-1px);
 }
+
 /* ============================================
    Route Toggle Section - Fixed Layout
    ============================================ */
@@ -571,7 +515,7 @@
 
 /* Single placeholder that shows either calculating or route info */
 .route-status-placeholder {
-  min-width: 250px; /* Reserve space for both states */
+  min-width: 250px;
   display: flex;
   align-items: center;
 }
@@ -586,7 +530,7 @@
   padding: 4px;
   border-radius: 8px;
   transition: background 0.2s ease;
-  flex-shrink: 0; /* Prevent shrinking */
+  flex-shrink: 0;
 }
 
 .route-toggle-container:hover {
@@ -779,11 +723,6 @@
   margin: 0 auto 20px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 @keyframes fadeInScale {
   from {
     opacity: 0;
@@ -890,6 +829,25 @@
 }
 
 /* ============================================
+   Animations
+   ============================================ */
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, calc(-50% + 30px));
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   AppointmentAzureMapPCF.css - PART 3 OF 3
+   Popups, Controls, Responsive & Accessibility
+   ============================================ */
+
+/* ============================================
    User Popup - Enhanced Design
    ============================================ */
 .user-popup-container {
@@ -953,7 +911,7 @@
 }
 
 /* ============================================
-   Appointment Popup - Modern Card Design with Scrolling
+   Appointment Popup - Modern Card Design
    ============================================ */
 .appointment-popup-container {
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -1103,20 +1061,6 @@
 }
 
 /* ============================================
-   Animations
-   ============================================ */
-@keyframes slideUp {
-  from {
-    transform: translate(-50%, calc(-50% + 30px));
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, -50%);
-    opacity: 1;
-  }
-}
-
-/* ============================================
    Responsive Design
    ============================================ */
 @media (max-width: 1200px) {
@@ -1261,104 +1205,6 @@
 }
 
 /* ============================================
-   Dark Mode Support
-   ============================================ */
-@media (prefers-color-scheme: dark) {
-  .appointment-azure-map-container {
-    background: #1a1d23;
-  }
-
-  .filter-controls-bar {
-    background: rgba(30, 33, 39, 0.95);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .user-info-label,
-  .filter-label {
-    color: #adb5bd;
-  }
-
-  .filter-select {
-    background: #2d3139;
-    border-color: #495057;
-    color: #e9ecef;
-  }
-
-  .filter-select:hover {
-    border-color: #667eea;
-    background: #343840;
-  }
-
-  .route-toggle-label {
-    color: #e9ecef;
-  }
-
-  .route-info-item {
-    background: linear-gradient(135deg, #2d3139 0%, #343840 100%);
-    color: #e9ecef;
-  }
-
-  .appointment-count {
-    background: linear-gradient(135deg, #2d3139 0%, #343840 100%);
-    color: #adb5bd;
-  }
-
-  .loading-overlay,
-  .empty-state-overlay {
-    background: rgba(30, 33, 39, 0.98);
-  }
-
-  .loading-text,
-  .empty-state-title,
-  .no-appointments-title {
-    color: #e9ecef;
-  }
-
-  .empty-state-message,
-  .no-appointments-message {
-    color: #adb5bd;
-  }
-
-  .error-overlay {
-    background: #2d3139;
-    border-color: #ff6b6b;
-  }
-
-  .error-message {
-    color: #adb5bd;
-  }
-
-  .user-popup-container,
-  .appointment-popup-container {
-    background: #2d3139;
-  }
-
-  .user-popup-field-value,
-  .appointment-popup-subject,
-  .appointment-popup-regarding-value {
-    color: #e9ecef;
-  }
-
-  .user-popup-address,
-  .appointment-popup-detail-text,
-  .appointment-popup-description {
-    color: #adb5bd;
-  }
-
-  .appointment-popup-detail-row {
-    background: #1a1d23;
-  }
-
-  .appointment-popup-detail-row:hover {
-    background: #343840;
-  }
-
-  .appointment-popup-regarding,
-  .appointment-popup-description {
-    background: linear-gradient(135deg, #1a1d23 0%, #2d3139 100%);
-  }
-}
-/* ============================================
    Azure Maps Controls - Visibility Fix
    ============================================ */
 
@@ -1452,79 +1298,193 @@
   color: #667eea;
 }
 
-/* Style Control */
+/* Style Control - Most Important */
 .atlas-control-style {
-  background: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  margin-top: 8px;
-  max-width: 120px;
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  overflow: visible !important;
+  z-index: 200 !important;
+  position: relative !important;
+  display: block !important;
+  visibility: visible !important;
 }
 
-.atlas-control-style .atlas-control-style-button {
-  padding: 8px 12px;
-  border: none;
-  background: white;
-  cursor: pointer;
-  font-size: 12px;
-  text-align: left;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid #e9ecef;
-  width: 100%;
-  text-align: center;
+.atlas-control-style button {
+  padding: 10px 14px !important;
+  border: none !important;
+  background: white !important;
+  cursor: pointer !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #495057 !important;
+  transition: all 0.2s ease !important;
+  border-bottom: 1px solid #e9ecef !important;
+  width: 100% !important;
+  text-align: left !important;
+  display: block !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  min-width: 120px;
+  white-space: nowrap;
 }
 
-.atlas-control-style .atlas-control-style-button:last-child {
-  border-bottom: none;
+.atlas-control-style button:last-child {
+  border-bottom: none !important;
 }
 
-.atlas-control-style .atlas-control-style-button:hover {
-  background: #f8f9fa;
-  color: #667eea;
+.atlas-control-style button:hover {
+  background: #f8f9fa !important;
+  color: #667eea !important;
+  transform: translateX(2px) !important;
 }
 
-.atlas-control-style .atlas-control-style-button.atlas-control-style-button-active {
-  background: #667eea;
-  color: white;
-  font-weight: 600;
+.atlas-control-style button:active {
+  background: #e9ecef !important;
 }
 
-/* Ensure controls container has proper z-index and positioning */
-.atlas-map-controls-container {
-  z-index: 100;
-  pointer-events: auto;
+.atlas-control-style button.atlas-control-style-button-active,
+.atlas-control-style button[class*="active"] {
+  background: #667eea !important;
+  color: white !important;
+  font-weight: 600 !important;
 }
 
-/* Dark mode support for controls */
-@media (prefers-color-scheme: dark) {
-  .atlas-control-zoom,
-  .atlas-control-compass,
-  .atlas-control-pitch,
-  .atlas-control-style {
-    background: #2d3139;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-  }
+/* Zoom Control */
+.atlas-control-zoom {
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  margin-top: 8px !important;
+}
 
-  .atlas-control-zoom button,
-  .atlas-control-compass button,
-  .atlas-control-pitch button,
-  .atlas-control-style .atlas-control-style-button {
-    background: #2d3139;
-    color: #e9ecef;
-    border-color: #495057;
-  }
+.atlas-control-zoom button {
+  width: 40px !important;
+  height: 40px !important;
+  border: none !important;
+  background: white !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-bottom: 1px solid #e9ecef !important;
+  transition: all 0.2s ease !important;
+  color: #495057 !important;
+  padding: 0 !important;
+}
 
-  .atlas-control-zoom button:hover,
-  .atlas-control-compass button:hover,
-  .atlas-control-pitch button:hover,
-  .atlas-control-style .atlas-control-style-button:hover {
-    background: #343840;
-    color: #667eea;
-  }
+.atlas-control-zoom button:last-child {
+  border-bottom: none !important;
+}
 
-  .atlas-control-style .atlas-control-style-button.atlas-control-style-button-active {
-    background: #667eea;
-    color: white;
+.atlas-control-zoom button:hover {
+  background: #f8f9fa !important;
+  color: #667eea !important;
+}
+
+.atlas-control-zoom button:active {
+  background: #e9ecef !important;
+}
+
+/* Compass Control */
+.atlas-control-compass {
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  margin-top: 8px !important;
+}
+
+.atlas-control-compass button {
+  width: 40px !important;
+  height: 40px !important;
+  border: none !important;
+  background: white !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  color: #495057 !important;
+  padding: 0 !important;
+}
+
+.atlas-control-compass button:hover {
+  background: #f8f9fa !important;
+  color: #667eea !important;
+}
+
+.atlas-control-compass button:active {
+  background: #e9ecef !important;
+}
+
+/* Pitch Control */
+.atlas-control-pitch {
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  margin-top: 8px !important;
+}
+
+.atlas-control-pitch button {
+  width: 40px !important;
+  height: 40px !important;
+  border: none !important;
+  background: white !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  color: #495057 !important;
+  padding: 0 !important;
+}
+
+.atlas-control-pitch button:hover {
+  background: #f8f9fa !important;
+  color: #667eea !important;
+}
+
+.atlas-control-pitch button:active {
+  background: #e9ecef !important;
+}
+
+/* Control Container - Ensure visibility */
+.atlas-control {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Control Group Container */
+.atlas-map-controls-container,
+.atlas-map-controls-top-right,
+.atlas-map-controls-top-left,
+.atlas-map-controls-bottom-right,
+.atlas-map-controls-bottom-left {
+  pointer-events: auto !important;
+  z-index: 100 !important;
+}
+
+/* Prevent clipping of dropdowns */
+.atlas-control-style {
+  clip: auto !important;
+  clip-path: none !important;
+}
+
+/* Focus states for accessibility */
+.atlas-control button:focus {
+  outline: 2px solid #667eea !important;
+  outline-offset: 2px !important;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .atlas-control button {
+    transition: none !important;
   }
 }
