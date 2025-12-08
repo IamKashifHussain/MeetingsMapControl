@@ -1,8 +1,7 @@
-// MapComponent.tsx - Part 1 of 2
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
-import "./css/AppointmentAzureMapPCF.css";
+import "./MapComponent.css";
 import { IInputs } from "./generated/ManifestTypes";
 import {
   AppointmentRecord,
@@ -167,7 +166,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         language: "en-US",
         showFeedbackLink: false,
         showLogo: false,
-        minZoom: 1, 
+        minZoom: 2, 
         maxZoom: 20,
       });
 
@@ -207,6 +206,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 "night",
                 "road_shaded_relief",
               ],
+              layout: 'list'
             }),
           ],
           {
@@ -463,7 +463,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     div.textContent = text;
     return div.innerHTML;
   };
-  // MapComponent.tsx - Part 2 of 2
 
   // ============= Popup Content Methods =============
   const createUserPopupContent = (
