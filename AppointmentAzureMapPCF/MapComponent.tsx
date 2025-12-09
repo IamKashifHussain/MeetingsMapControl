@@ -166,7 +166,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
         language: "en-US",
         showFeedbackLink: false,
         showLogo: false,
-        minZoom: 2, 
+        minZoom: 2,
         maxZoom: 20,
       });
 
@@ -198,16 +198,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             new atlas.control.ZoomControl(),
             new atlas.control.CompassControl(),
             new atlas.control.PitchControl(),
-            new atlas.control.StyleControl({
-              mapStyles: [
-                "road",
-                "satellite",
-                "satellite_road_labels",
-                "night",
-                "road_shaded_relief",
-              ],
-              layout: 'list'
-            }),
           ],
           {
             position: atlas.ControlPosition.TopRight,
@@ -792,7 +782,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <option value="next12months">Next 12 months or earlier</option>
             </select>
           </div>
-         
+
           <div className="route-toggle-section">
             <label className="route-toggle-container">
               <input

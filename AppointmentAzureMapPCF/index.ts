@@ -121,7 +121,7 @@ export class AppointmentAzureMapPCF
     try {
       const result = await context.webAPI.retrieveMultipleRecords(
         "ti_mapconfiguration",
-        "?$select=ti_azuremapskey&$top=1"
+        "?$select=ti_azuremapskey&$filter=ti_activationstatus eq 1$top=1"
       );
 
       if (result.entities.length > 0) {
