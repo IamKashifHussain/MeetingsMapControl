@@ -32,6 +32,11 @@ interface MarkerInfo {
   appointment: AppointmentRecord;
 }
 
+interface CachedRoute {
+  result: RouteResult;
+  timestamp: number;
+}
+
 const MapComponent: React.FC<MapComponentProps> = ({
   appointments,
   allAppointmentsCount,
@@ -56,6 +61,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const routeLayerRef = React.useRef<atlas.layer.LineLayer | null>(null);
   const routeSourceRef = React.useRef<atlas.source.DataSource | null>(null);
   const routeServiceRef = React.useRef<AzureMapsRouteService | null>(null);
+  const routeCacheRef = React.useRef<Map<string, CachedRoute>>(new Map());
+
+  // ============= Constants =============
+  const ROUTE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   // ============= State =============
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
@@ -291,8 +300,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     addresses: string[]
   ): Promise<Map<string, atlas.data.Position | null>> => {
     const results = new Map<string, atlas.data.Position | null>();
-    const batchSize = 5;
-    const delayMs = 100;
+    const batchSize = 10;
+    const delayMs = 50;
 
     for (let i = 0; i < addresses.length; i += batchSize) {
       if (abortControllerRef.current?.signal.aborted) {
@@ -454,6 +463,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return div.innerHTML;
   };
 
+  const formatRouteDuration = (durationInSeconds: number): string => {
+    const totalMinutes = Math.round(durationInSeconds / 60);
+    
+    if (totalMinutes >= 60) {
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+    }
+    
+    return `${totalMinutes}m`;
+  };
+
   // ============= Popup Content Methods =============
   const createUserPopupContent = (
     userName: string,
@@ -557,6 +578,32 @@ const MapComponent: React.FC<MapComponentProps> = ({
     `;
   };
 
+  // ============= Route Helper Methods =============
+  const getCacheKey = (
+    startPos: atlas.data.Position,
+    points: RoutePoint[]
+  ): string => {
+    return JSON.stringify([
+      startPos,
+      points.map((p) => p.position),
+    ]);
+  };
+
+  const displayRouteOnMap = (result: RouteResult) => {
+    if (!routeSourceRef.current) return;
+
+    const routeFeature = new atlas.data.Feature(
+      new atlas.data.LineString(result.routeCoordinates),
+      {
+        distance: result.totalDistance,
+        duration: result.totalDuration,
+      }
+    );
+
+    routeSourceRef.current.clear();
+    routeSourceRef.current.add(routeFeature);
+  };
+
   // ============= Marker Update Methods =============
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
@@ -595,6 +642,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     const addressMap = new Map<string, AppointmentRecord[]>();
+    const routePoints: RoutePoint[] = [];
+
     for (const result of addressResults) {
       if (result && result.address) {
         if (!addressMap.has(result.address)) {
@@ -610,15 +659,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
-    const geocodeResults = await batchGeocodeAddresses(uniqueAddresses);
-
-    if (abortControllerRef.current?.signal.aborted) {
-      return;
-    }
+    const geocodePromises = uniqueAddresses.map((addr) =>
+      geocodeAddress(addr).then((pos) => ({ address: addr, position: pos }))
+    );
 
     const positions: atlas.data.Position[] = [];
     let markerCount = 0;
-    const routePoints: RoutePoint[] = [];
 
     const sortedAddresses = uniqueAddresses.sort((a, b) => {
       const apptA = addressMap.get(a)?.[0];
@@ -627,9 +673,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return apptA.scheduledstart.getTime() - apptB.scheduledstart.getTime();
     });
 
+    const geocodeResults = await Promise.all(geocodePromises);
+
+    if (abortControllerRef.current?.signal.aborted) {
+      return;
+    }
+
+    const geocodeMap = new Map(
+      geocodeResults
+        .filter((r) => r.position)
+        .map((r) => [r.address, r.position])
+    );
+
     for (const address of sortedAddresses) {
       const appts = addressMap.get(address);
-      const position = geocodeResults.get(address);
+      const position = geocodeMap.get(address);
 
       if (!position || !appts) continue;
 
@@ -668,11 +726,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
 
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
-      await calculateAndDisplayRoute(userLocation.position, routePoints);
-    } else {
-      if (routeSourceRef.current) {
-        routeSourceRef.current.clear();
-      }
+      void calculateAndDisplayRoute(userLocation.position, routePoints);
+    } else if (!showRoute && routeSourceRef.current) {
+      routeSourceRef.current.clear();
       setRouteData(null);
     }
 
@@ -702,6 +758,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setRouteData(null);
 
     try {
+      const cacheKey = getCacheKey(startPosition, routePoints);
+      const cached = routeCacheRef.current.get(cacheKey);
+
+      if (cached && Date.now() - cached.timestamp < ROUTE_CACHE_DURATION) {
+        setRouteData(cached.result);
+        displayRouteOnMap(cached.result);
+        setIsCalculatingRoute(false);
+        return;
+      }
+
       const result = await routeServiceRef.current.calculateChronologicalRoute(
         startPosition,
         routePoints
@@ -712,18 +778,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
         result.routeCoordinates &&
         result.routeCoordinates.length > 0
       ) {
+        routeCacheRef.current.set(cacheKey, {
+          result,
+          timestamp: Date.now(),
+        });
+
         setRouteData(result);
-
-        const routeFeature = new atlas.data.Feature(
-          new atlas.data.LineString(result.routeCoordinates),
-          {
-            distance: result.totalDistance,
-            duration: result.totalDuration,
-          }
-        );
-
-        routeSourceRef.current.clear();
-        routeSourceRef.current.add(routeFeature);
+        displayRouteOnMap(result);
       } else {
         console.warn("[Route] ⚠ No valid route coordinates returned");
         routeSourceRef.current.clear();
@@ -809,7 +870,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                     📏 {(routeData.totalDistance / 1000).toFixed(1)} km
                   </span>
                   <span className="route-info-item">
-                    ⏱️ {Math.round(routeData.totalDuration / 60)} min
+                    ⏱️ {formatRouteDuration(routeData.totalDuration)}
                   </span>
                 </div>
               ) : null}
