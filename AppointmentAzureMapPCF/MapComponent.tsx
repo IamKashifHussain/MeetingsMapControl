@@ -345,7 +345,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setUserLocation(newUserLocation);
 
       const userMarker = new atlas.HtmlMarker({
-        color: "green",
+        color: "red",
         position: position,
       });
 
