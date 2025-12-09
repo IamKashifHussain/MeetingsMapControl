@@ -834,13 +834,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
             >
               <option value="all">All</option>
               <option value="overdue">Overdue</option>
-              <option value="today">Today or earlier</option>
-              <option value="tomorrow">Tomorrow or earlier</option>
-              <option value="next7days">Next 7 days or earlier</option>
-              <option value="next30days">Next 30 days or earlier</option>
-              <option value="next90days">Next 90 days or earlier</option>
-              <option value="next6months">Next 6 months or earlier</option>
-              <option value="next12months">Next 12 months or earlier</option>
+              <option value="today">Today</option>
+              <option value="tomorrow">Tomorrow</option>
+              <option value="next7days">Next 7 days</option>
+              <option value="next30days">Next 30 days</option>
+              <option value="next90days">Next 90 days</option>
+              <option value="next6months">Next 6 months</option>
+              <option value="next12months">Next 12 months</option>
             </select>
           </div>
 

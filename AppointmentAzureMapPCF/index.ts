@@ -260,41 +260,41 @@ export class AppointmentAzureMapPCF
       case "next7days":
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today &&
-            appt.scheduledstart < new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+            appt.scheduledstart >= tomorrow &&
+            appt.scheduledstart < new Date(tomorrow.getTime() + 7 * 24 * 60 * 60 * 1000)
         );
         break;
       case "next30days":
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today &&
+            appt.scheduledstart >= tomorrow &&
             appt.scheduledstart <
-              new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+              new Date(tomorrow.getTime() + 30 * 24 * 60 * 60 * 1000)
         );
         break;
       case "next90days":
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today &&
+            appt.scheduledstart >= tomorrow &&
             appt.scheduledstart <
-              new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000)
+              new Date(tomorrow.getTime() + 90 * 24 * 60 * 60 * 1000)
         );
         break;
       case "next6months": {
-        const d = new Date(today);
+        const d = new Date(tomorrow);
         d.setMonth(d.getMonth() + 6);
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < d
+            appt.scheduledstart >= tomorrow && appt.scheduledstart < d
         );
         break;
       }
       case "next12months": {
-        const d = new Date(today);
+        const d = new Date(tomorrow);
         d.setMonth(d.getMonth() + 12);
         filtered = filtered.filter(
           (appt) =>
-            appt.scheduledstart >= today && appt.scheduledstart < d
+            appt.scheduledstart >= tomorrow && appt.scheduledstart < d
         );
         break;
       }
