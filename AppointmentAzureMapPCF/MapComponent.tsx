@@ -90,12 +90,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
+    if (!currentUserAddress) {
+      setErrorMessage("User address is required to display the map");
+      setIsLoading(false);
+      return;
+    }
+
     initializeMap();
 
     return () => {
       cleanup();
     };
-  }, [azureMapsKey]);
+  }, [azureMapsKey, currentUserAddress]);
 
   React.useEffect(() => {
     if (mapInstanceRef.current && popupRef.current && !isLoading) {
@@ -465,13 +471,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const formatRouteDuration = (durationInSeconds: number): string => {
     const totalMinutes = Math.round(durationInSeconds / 60);
-    
+
     if (totalMinutes >= 60) {
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
       return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
     }
-    
+
     return `${totalMinutes}m`;
   };
 
@@ -583,10 +589,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     startPos: atlas.data.Position,
     points: RoutePoint[]
   ): string => {
-    return JSON.stringify([
-      startPos,
-      points.map((p) => p.position),
-    ]);
+    return JSON.stringify([startPos, points.map((p) => p.position)]);
   };
 
   const displayRouteOnMap = (result: RouteResult) => {

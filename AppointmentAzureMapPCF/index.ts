@@ -50,7 +50,7 @@ export class AppointmentAzureMapPCF
 
     void this.initializeData(context);
   }
-  
+
   private async initializeData(
     context: ComponentFramework.Context<IInputs>
   ): Promise<void> {
@@ -130,7 +130,7 @@ export class AppointmentAzureMapPCF
     } catch (error) {
       console.error("[Config] Azure Maps Key Error:", error);
     } finally {
-      this.isLoadingConfig = false; 
+      this.isLoadingConfig = false;
     }
   }
 
@@ -201,11 +201,13 @@ export class AppointmentAzureMapPCF
           regardingRef = {
             id: { guid: entity._regardingobjectid_value },
             etn:
-              entity["_regardingobjectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"] ??
-              "",
+              entity[
+                "_regardingobjectid_value@Microsoft.Dynamics.CRM.lookuplogicalname"
+              ] ?? "",
             name:
-              entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"] ??
-              "",
+              entity[
+                "_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"
+              ] ?? "",
           };
         }
 
@@ -218,8 +220,9 @@ export class AppointmentAzureMapPCF
           description: entity.description ?? "",
           regardingobjectid: regardingRef,
           regardingobjectidname:
-            entity["_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"] ??
-            "",
+            entity[
+              "_regardingobjectid_value@OData.Community.Display.V1.FormattedValue"
+            ] ?? "",
           ownerId: this.currentUserId,
         };
       });
@@ -241,20 +244,22 @@ export class AppointmentAzureMapPCF
 
     switch (this.currentFilter.dueFilter) {
       case "overdue":
-        filtered = filtered.filter((appt) => appt.scheduledstart < now);
+        filtered = filtered.filter((appt) => appt.scheduledstart < today);
         break;
       case "tomorrow":
         filtered = filtered.filter(
           (appt) =>
             appt.scheduledstart >= tomorrow &&
-            appt.scheduledstart < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)
+            appt.scheduledstart <
+              new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)
         );
         break;
       case "next7days":
         filtered = filtered.filter(
           (appt) =>
             appt.scheduledstart >= tomorrow &&
-            appt.scheduledstart < new Date(tomorrow.getTime() + 7 * 24 * 60 * 60 * 1000)
+            appt.scheduledstart <
+              new Date(tomorrow.getTime() + 7 * 24 * 60 * 60 * 1000)
         );
         break;
       case "next30days":
@@ -277,8 +282,7 @@ export class AppointmentAzureMapPCF
         const d = new Date(tomorrow);
         d.setMonth(d.getMonth() + 6);
         filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= tomorrow && appt.scheduledstart < d
+          (appt) => appt.scheduledstart >= tomorrow && appt.scheduledstart < d
         );
         break;
       }
@@ -286,8 +290,7 @@ export class AppointmentAzureMapPCF
         const d = new Date(tomorrow);
         d.setMonth(d.getMonth() + 12);
         filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= tomorrow && appt.scheduledstart < d
+          (appt) => appt.scheduledstart >= tomorrow && appt.scheduledstart < d
         );
         break;
       }
@@ -298,7 +301,8 @@ export class AppointmentAzureMapPCF
         filtered = filtered.filter(
           (appt) =>
             appt.scheduledstart >= today &&
-            appt.scheduledstart < new Date(today.getTime() + 24 * 60 * 60 * 1000)
+            appt.scheduledstart <
+              new Date(today.getTime() + 24 * 60 * 60 * 1000)
         );
         break;
     }
@@ -340,7 +344,9 @@ export class AppointmentAzureMapPCF
         React.createElement(
           "div",
           { style: { padding: "20px", textAlign: "center" } },
-          this.isLoadingConfig ? "Loading configuration..." : "Loading appointments..."
+          this.isLoadingConfig
+            ? "Loading configuration..."
+            : "Loading appointments..."
         )
       );
       return;
@@ -357,6 +363,24 @@ export class AppointmentAzureMapPCF
               "p",
               { key: "m" },
               "Azure Maps key not found in ti_mapconfiguration."
+            ),
+          ]
+        )
+      );
+      return;
+    }
+
+    if (!this.currentUserId) {
+      this.root.render(
+        React.createElement(
+          "div",
+          { style: { padding: "20px", textAlign: "center", color: "#d13438" } },
+          [
+            React.createElement("h3", { key: "t" }, "⚠️ User Context Error"),
+            React.createElement(
+              "p",
+              { key: "m" },
+              "Could not retrieve the current user ID."
             ),
           ]
         )
