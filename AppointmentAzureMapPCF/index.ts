@@ -26,7 +26,7 @@ export class AppointmentAzureMapPCF
   private filteredAppointments: AppointmentRecord[] = [];
   private isLoadingAppointments = true;
   private currentFilter: FilterOptions = {
-    dueFilter: "all",
+    dueFilter: "today",
   };
 
   private context: ComponentFramework.Context<IInputs>;
@@ -243,13 +243,6 @@ export class AppointmentAzureMapPCF
       case "overdue":
         filtered = filtered.filter((appt) => appt.scheduledstart < now);
         break;
-      case "today":
-        filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= today &&
-            appt.scheduledstart < new Date(today.getTime() + 24 * 60 * 60 * 1000)
-        );
-        break;
       case "tomorrow":
         filtered = filtered.filter(
           (appt) =>
@@ -299,7 +292,14 @@ export class AppointmentAzureMapPCF
         break;
       }
       case "all":
+        break;
+      case "today":
       default:
+        filtered = filtered.filter(
+          (appt) =>
+            appt.scheduledstart >= today &&
+            appt.scheduledstart < new Date(today.getTime() + 24 * 60 * 60 * 1000)
+        );
         break;
     }
 
