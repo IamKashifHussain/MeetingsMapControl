@@ -607,7 +607,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     routeSourceRef.current.add(routeFeature);
   };
 
-  // ============= Marker Update Methods =============
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -723,18 +722,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
         scheduledstart: appts[0].scheduledstart,
       });
     }
-
     if (userLocation?.position) {
       positions.push(userLocation.position);
     }
-
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
       void calculateAndDisplayRoute(userLocation.position, routePoints);
     } else if (!showRoute && routeSourceRef.current) {
       routeSourceRef.current.clear();
       setRouteData(null);
     }
-
     if (positions.length > 0) {
       setErrorMessage("");
       const bounds = atlas.data.BoundingBox.fromPositions(positions);

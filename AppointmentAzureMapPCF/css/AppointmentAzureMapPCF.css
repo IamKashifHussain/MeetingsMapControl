@@ -167,6 +167,58 @@
     min-height: 450px;
   }
 }
+@media (max-width: 768px) {
+  .pcf-appointment-map-root,
+  #appointmentMapRoot,
+  .pcf-loading-container,
+  .pcf-error-container {
+    min-height: 400px;
+  }
+
+  .pcf-loading-content,
+  .pcf-error-content {
+    padding: 30px;
+    max-width: 90%;
+  }
+
+  .pcf-error-icon {
+    font-size: 36px;
+  }
+
+  .pcf-error-title {
+    font-size: 18px;
+  }
+
+  .pcf-error-message {
+    font-size: 13px;
+  }
+}
+
+/* Small mobile view */
+@media (max-width: 480px) {
+  .pcf-appointment-map-root,
+  #appointmentMapRoot,
+  .pcf-loading-container,
+  .pcf-error-container {
+    min-height: 350px;
+  }
+
+  .pcf-loading-content,
+  .pcf-error-content {
+    padding: 20px;
+  }
+
+  .pcf-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 3px;
+  }
+
+  .pcf-loading-text {
+    font-size: 13px;
+  }
+}
+
 
 /* ============================================
    Accessibility Improvements
