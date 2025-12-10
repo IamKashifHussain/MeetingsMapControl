@@ -115,12 +115,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [appointments, showRoute]);
 
   React.useEffect(() => {
-    if (currentUserAddress && mapInstanceRef.current && !isLoading) {
-      void geocodeAndDisplayUserLocation();
-    }
-  }, [currentUserAddress, isLoading]);
-
-  React.useEffect(() => {
     if (
       userLocation?.position &&
       mapInstanceRef.current &&
@@ -226,10 +220,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         setIsLoading(false);
 
+        // CRITICAL FIX: Wait for user location BEFORE updating markers
         if (currentUserAddress) {
           await geocodeAndDisplayUserLocation();
         }
 
+        // Now update markers - user location will be included in zoom
         await updateMarkers();
       });
 
@@ -366,10 +362,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       map.markers.add(userMarker);
       userMarkerRef.current = userMarker;
-
-      if (appointments.length > 0) {
-        await updateMarkers();
-      }
     } else {
       console.warn("[User Location] ⚠ Failed to geocode user address");
       setUserLocation(null);
@@ -666,6 +658,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
     );
 
     const positions: atlas.data.Position[] = [];
+
+    // Add user location first to positions array
+    if (userLocation?.position) {
+      positions.push(userLocation.position);
+    }
+
     let markerCount = 0;
 
     const sortedAddresses = uniqueAddresses.sort((a, b) => {
@@ -722,15 +720,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
         scheduledstart: appts[0].scheduledstart,
       });
     }
-    if (userLocation?.position) {
-      positions.push(userLocation.position);
-    }
+
+    // Calculate and display route if enabled
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
       void calculateAndDisplayRoute(userLocation.position, routePoints);
     } else if (!showRoute && routeSourceRef.current) {
       routeSourceRef.current.clear();
       setRouteData(null);
     }
+
+    // Zoom to fit all markers including user location
     if (positions.length > 0) {
       setErrorMessage("");
       const bounds = atlas.data.BoundingBox.fromPositions(positions);
@@ -902,6 +901,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
             </div>
           )}
 
+          {/* Loading Indicator */}
+          {isLoading && (
+            <div className="loading-overlay">
+              <div className="loading-spinner" />
+              <p className="loading-text">Loading your appointments...</p>
+            </div>
+          )}
           {/* Loading Indicator */}
           {isLoading && (
             <div className="loading-overlay">
