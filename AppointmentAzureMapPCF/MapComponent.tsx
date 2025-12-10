@@ -96,6 +96,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
+    // Reset user location when address changes
+    setUserLocation(null);
+    
     initializeMap();
 
     return () => {
@@ -104,7 +107,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [azureMapsKey, currentUserAddress]);
 
   React.useEffect(() => {
-    if (mapInstanceRef.current && popupRef.current && !isLoading) {
+    if (mapInstanceRef.current && popupRef.current && !isLoading && userLocation) {
       abortControllerRef.current = new AbortController();
       void updateMarkers();
     }
@@ -112,19 +115,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [appointments, showRoute]);
+  }, [appointments, showRoute, userLocation]);
 
-  React.useEffect(() => {
-    if (
-      userLocation?.position &&
-      mapInstanceRef.current &&
-      popupRef.current &&
-      !isLoading &&
-      showRoute
-    ) {
-      void updateMarkers();
-    }
-  }, [userLocation]);
+
 
   // ============= Initialization Methods =============
   const cleanup = () => {
@@ -218,15 +211,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
           padding: 0,
         });
 
-        setIsLoading(false);
-
-        // CRITICAL FIX: Wait for user location BEFORE updating markers
+        // CRITICAL: Geocode user location FIRST and wait for it
         if (currentUserAddress) {
           await geocodeAndDisplayUserLocation();
         }
 
-        // Now update markers - user location will be included in zoom
-        await updateMarkers();
+        setIsLoading(false);
+
+        // Markers will be updated via useEffect when userLocation changes
       });
 
       map.events.add("error", (error) => {
@@ -599,6 +591,46 @@ const MapComponent: React.FC<MapComponentProps> = ({
     routeSourceRef.current.add(routeFeature);
   };
 
+  // ============= Helper function to fit map to all markers =============
+  const fitMapToMarkers = () => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const positions: atlas.data.Position[] = [];
+
+    // ALWAYS include user location first
+    if (userLocation?.position) {
+      positions.push(userLocation.position);
+      console.log("[fitMapToMarkers] Added user location:", userLocation.position);
+    } else {
+      console.warn("[fitMapToMarkers] No user location available!");
+    }
+
+    // Add all appointment markers
+    markersRef.current.forEach((markerInfo) => {
+      const pos = markerInfo.marker.getOptions().position;
+      if (pos) {
+        positions.push(pos);
+      }
+    });
+
+    console.log("[fitMapToMarkers] Total positions for zoom:", positions.length);
+
+    // Only zoom if we have positions
+    if (positions.length > 0) {
+      const bounds = atlas.data.BoundingBox.fromPositions(positions);
+      console.log("[fitMapToMarkers] Setting camera to bounds:", bounds);
+      map.setCamera({
+        bounds: bounds,
+        padding: 80,
+        maxZoom: 15,
+        minZoom: 1,
+      });
+    } else {
+      console.warn("[fitMapToMarkers] No positions available for zoom!");
+    }
+  };
+
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -606,6 +638,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (!map || !popup) {
       return;
     }
+
+    // CRITICAL: Wait for user location to be ready before proceeding
+    if (!userLocation?.position) {
+      console.log("[updateMarkers] Waiting for user location...");
+      return;
+    }
+
+    console.log("[updateMarkers] User location ready:", userLocation.position);
 
     popup.close();
 
@@ -620,6 +660,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     setRouteData(null);
 
     if (appointments.length === 0) {
+      // Even with no appointments, zoom to user location
+      console.log("[updateMarkers] No appointments, zooming to user only");
+      fitMapToMarkers();
       return;
     }
 
@@ -650,19 +693,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const uniqueAddresses = Array.from(addressMap.keys());
 
     if (uniqueAddresses.length === 0) {
+      // Even with no valid addresses, zoom to user location
+      console.log("[updateMarkers] No valid addresses, zooming to user only");
+      fitMapToMarkers();
       return;
     }
 
     const geocodePromises = uniqueAddresses.map((addr) =>
       geocodeAddress(addr).then((pos) => ({ address: addr, position: pos }))
     );
-
-    const positions: atlas.data.Position[] = [];
-
-    // Add user location first to positions array
-    if (userLocation?.position) {
-      positions.push(userLocation.position);
-    }
 
     let markerCount = 0;
 
@@ -685,26 +724,52 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .map((r) => [r.address, r.position])
     );
 
+    // Helper function to check if two positions are at the same location
+    const isSameLocation = (pos1: atlas.data.Position, pos2: atlas.data.Position): boolean => {
+      const threshold = 0.0001; // ~11 meters
+      return Math.abs(pos1[0] - pos2[0]) < threshold && Math.abs(pos1[1] - pos2[1]) < threshold;
+    };
+
+    // Helper function to apply offset to a position
+    const applyOffset = (position: atlas.data.Position, offsetIndex: number): atlas.data.Position => {
+      // Apply small offset in a circular pattern
+      const offsetDistance = 0.0001 * (offsetIndex + 1); // Increase offset for each overlapping marker
+      const angle = (offsetIndex * 60) * (Math.PI / 180); // 60 degrees apart
+      return [
+        position[0] + offsetDistance * Math.cos(angle),
+        position[1] + offsetDistance * Math.sin(angle)
+      ];
+    };
+
     for (const address of sortedAddresses) {
       const appts = addressMap.get(address);
-      const position = geocodeMap.get(address);
+      const originalPosition = geocodeMap.get(address);
 
-      if (!position || !appts) continue;
+      if (!originalPosition || !appts) continue;
 
-      positions.push(position);
+      // Keep original position for route calculation
+      let markerPosition = originalPosition;
+
+      // Check if this position overlaps with user location
+      if (userLocation?.position && isSameLocation(originalPosition, userLocation.position)) {
+        console.log("[updateMarkers] Appointment at same location as user, applying visual offset");
+        // Apply offset ONLY to visual marker position (not route calculation)
+        markerPosition = applyOffset(originalPosition, markerCount);
+      }
+
       markerCount++;
 
       const marker = new atlas.HtmlMarker({
         color: "DodgerBlue",
         text: markerCount.toString(),
-        position: position,
+        position: markerPosition, // Visual position (possibly offset)
       });
 
       map.events.add("click", marker, () => {
         popup.close();
         popup.setOptions({
           content: createPopupContent(appts),
-          position: position,
+          position: markerPosition, // Use marker position for popup
         });
         popup.open(map);
       });
@@ -712,8 +777,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       map.markers.add(marker);
       markersRef.current.push({ marker, appointment: appts[0] });
 
+      // IMPORTANT: Use ORIGINAL position for route calculation (not offset position)
       routePoints.push({
-        position,
+        position: originalPosition, // Use original position for accurate routing
         address,
         appointmentId: appts[0].id,
         subject: appts[0].subject,
@@ -729,16 +795,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setRouteData(null);
     }
 
-    // Zoom to fit all markers including user location
-    if (positions.length > 0) {
+    // CRITICAL: Always zoom to include user location + all markers
+    console.log("[updateMarkers] Zooming to all markers including user");
+    if (markersRef.current.length > 0) {
       setErrorMessage("");
-      const bounds = atlas.data.BoundingBox.fromPositions(positions);
-      map.setCamera({
-        bounds: bounds,
-        padding: 80,
-        maxZoom: 15,
-        minZoom: 1,
-      });
+      fitMapToMarkers();
+    } else {
+      // Even if no appointment markers, zoom to user
+      fitMapToMarkers();
     }
   };
 
@@ -901,13 +965,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             </div>
           )}
 
-          {/* Loading Indicator */}
-          {isLoading && (
-            <div className="loading-overlay">
-              <div className="loading-spinner" />
-              <p className="loading-text">Loading your appointments...</p>
-            </div>
-          )}
           {/* Loading Indicator */}
           {isLoading && (
             <div className="loading-overlay">

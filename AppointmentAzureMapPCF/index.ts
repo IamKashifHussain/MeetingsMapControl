@@ -35,6 +35,7 @@ export class AppointmentAzureMapPCF
   private currentUserName = "";
 
   private showRoute = false;
+  private refreshTrigger = 0; // Add trigger to force re-render
 
   public init(
     context: ComponentFramework.Context<IInputs>,
@@ -333,6 +334,10 @@ export class AppointmentAzureMapPCF
     ]);
 
     this.applyFilters();
+    
+    // Increment trigger to force component refresh and re-geocode
+    this.refreshTrigger++;
+    
     this.renderComponent();
   };
 
@@ -388,26 +393,9 @@ export class AppointmentAzureMapPCF
       return;
     }
 
-    if (!this.currentUserId) {
-      this.root.render(
-        React.createElement(
-          "div",
-          { style: { padding: "20px", textAlign: "center", color: "#d13438" } },
-          [
-            React.createElement("h3", { key: "t" }, "⚠️ User Context Error"),
-            React.createElement(
-              "p",
-              { key: "m" },
-              "Could not retrieve the current user ID."
-            ),
-          ]
-        )
-      );
-      return;
-    }
-
     this.root.render(
       React.createElement(MapComponent, {
+        key: this.refreshTrigger, // Force component remount on refresh
         appointments: this.filteredAppointments,
         allAppointmentsCount: this.allAppointments.length,
         azureMapsKey: this.azureMapsKey,
