@@ -48,8 +48,17 @@ interface RouteApiResponse {
   routes: RouteApiRoute[];
 }
 
+interface CacheEntry {
+  result: RouteResult;
+  timestamp: number;
+}
+
 export class AzureMapsRouteService {
   private azureMapsKey: string;
+  private readonly baseUrl = "https://atlas.microsoft.com/route/directions/json";
+  private cache = new Map<string, CacheEntry>();
+  private readonly cacheTTL = 5 * 60 * 1000; // 5 minutes
+  private apiCallCount = 0;
 
   constructor(azureMapsKey: string) {
     this.azureMapsKey = azureMapsKey;
@@ -71,39 +80,29 @@ export class AzureMapsRouteService {
       (a, b) => a.scheduledstart.getTime() - b.scheduledstart.getTime()
     );
 
-    try {
-      // Build waypoints array: start position + all appointment locations
-      const waypoints = [
-        startPosition,
-        ...sortedPoints.map((point) => point.position),
-      ];
+    const cacheKey = this.generateCacheKey(startPosition, sortedPoints);
+    const cached = this.getValidCacheEntry(cacheKey);
+    if (cached) {
+      console.log(`Cache hit! Saved API call. Total calls: ${this.apiCallCount}`);
+      return cached;
+    }
 
-      // Calculate the route using Azure Maps Directions API
+    try {
+      const waypoints = [startPosition, ...sortedPoints.map((p) => p.position)];
       const routeData = await this.getRoute(waypoints);
 
-      if (!routeData) {
+      if (!routeData?.routes?.[0]) {
         return null;
       }
 
-      // Extract route legs with detailed information
-      const routeLegs = this.buildRouteLegDetails(
-        startPosition,
-        sortedPoints,
-        routeData
-      );
-
-      return {
-        routeCoordinates: routeData.routes[0].legs.reduce(
-          (acc: atlas.data.Position[], leg: RouteApiLeg) => [
-            ...acc,
-            ...leg.points.map((p: RouteApiLegPoint) => [p.longitude, p.latitude] as atlas.data.Position),
-          ],
-          [] as atlas.data.Position[]
-        ),
-        totalDistance: routeData.routes[0].summary.lengthInMeters,
-        totalDuration: routeData.routes[0].summary.travelTimeInSeconds,
-        routeLegs: routeLegs,
-      };
+      const result = this.buildRouteResult(startPosition, sortedPoints, routeData);
+      
+      // Cache the result with timestamp
+      this.cache.set(cacheKey, { result, timestamp: Date.now() });
+      this.apiCallCount++;
+      console.log(`API call made. Total calls: ${this.apiCallCount}`);
+      
+      return result;
     } catch (error) {
       console.error("Route calculation failed:", error);
       return null;
@@ -111,106 +110,162 @@ export class AzureMapsRouteService {
   }
 
   /**
+   * Builds route result from API response
+   */
+  private buildRouteResult(
+    startPosition: atlas.data.Position,
+    sortedPoints: RoutePoint[],
+    routeData: RouteApiResponse
+  ): RouteResult {
+    const firstRoute = routeData.routes[0];
+
+    return {
+      routeCoordinates: this.extractRouteCoordinates(firstRoute.legs),
+      totalDistance: firstRoute.summary.lengthInMeters,
+      totalDuration: firstRoute.summary.travelTimeInSeconds,
+      routeLegs: this.buildRouteLegDetails(sortedPoints, firstRoute.legs),
+    };
+  }
+
+  /**
+   * Efficiently extracts coordinates from legs
+   */
+  private extractRouteCoordinates(legs: RouteApiLeg[]): atlas.data.Position[] {
+    const coords: atlas.data.Position[] = [];
+    
+    for (const leg of legs) {
+      for (const point of leg.points) {
+        coords.push([point.longitude, point.latitude]);
+      }
+    }
+    
+    return coords;
+  }
+
+  /**
    * Fetches route data from Azure Maps Directions API
    */
-  private async getRoute(
-    waypoints: atlas.data.Position[]
-  ): Promise<RouteApiResponse> {
-    const waypointString = waypoints
-      .map((pos) => `${pos[1]},${pos[0]}`)
-      .join(":");
+  private async getRoute(waypoints: atlas.data.Position[]): Promise<RouteApiResponse> {
+    const waypointString = waypoints.map((pos) => `${pos[1]},${pos[0]}`).join(":");
 
-    const url =
-      `https://atlas.microsoft.com/route/directions/json?` +
-      `api-version=1.0&` +
-      `subscription-key=${this.azureMapsKey}&` +
-      `query=${waypointString}&` +
-      `computeTravelTime=true&` +
-      `travelMode=car&` +
-      `traffic=true`;
+    const params = new URLSearchParams({
+      "api-version": "1.0",
+      "subscription-key": this.azureMapsKey,
+      query: waypointString,
+      computeTravelTime: "true",
+      travelMode: "car",
+      traffic: "true",
+    });
 
-    const response = await fetch(url);
+    const response = await fetch(`${this.baseUrl}?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error(`Route API failed: ${response.statusText}`);
     }
 
-    return await response.json() as RouteApiResponse;
+    return await response.json();
   }
 
   /**
    * Builds detailed leg information from route data
    */
   private buildRouteLegDetails(
-    startPosition: atlas.data.Position,
     sortedPoints: RoutePoint[],
-    routeData: RouteApiResponse
+    legs: RouteApiLeg[]
   ): RouteLeg[] {
-    const legs: RouteLeg[] = [];
-    const routeLegs = routeData.routes[0].legs;
+    const legDetails: RouteLeg[] = [];
 
     // First leg: from user location to first appointment
-    if (routeLegs.length > 0) {
-      legs.push({
+    if (legs.length > 0) {
+      const firstPoint = sortedPoints[0];
+      legDetails.push({
         from: "Your Location",
-        to: sortedPoints[0]?.subject || sortedPoints[0]?.address || "First Appointment",
-        distance: routeLegs[0].lengthInMeters,
-        duration: routeLegs[0].travelTimeInSeconds,
-        summary: this.formatRouteSummary(
-          routeLegs[0].lengthInMeters,
-          routeLegs[0].travelTimeInSeconds
+        to: firstPoint.subject || firstPoint.address || "First Appointment",
+        distance: legs[0].lengthInMeters,
+        duration: legs[0].travelTimeInSeconds,
+        summary: AzureMapsRouteService.formatRouteSummary(
+          legs[0].lengthInMeters,
+          legs[0].travelTimeInSeconds
         ),
       });
     }
 
     // Subsequent legs: between appointments
-    for (let i = 1; i < routeLegs.length; i++) {
-      const leg = routeLegs[i];
+    for (let i = 1; i < legs.length; i++) {
+      const leg = legs[i];
       const fromPoint = sortedPoints[i - 1];
       const toPoint = sortedPoints[i];
 
-      legs.push({
-        from: fromPoint?.subject || fromPoint?.address || `Stop ${i}`,
-        to: toPoint?.subject || toPoint?.address || `Stop ${i + 1}`,
+      legDetails.push({
+        from: fromPoint.subject || fromPoint.address || `Stop ${i}`,
+        to: toPoint.subject || toPoint.address || `Stop ${i + 1}`,
         distance: leg.lengthInMeters,
         duration: leg.travelTimeInSeconds,
-        summary: this.formatRouteSummary(
+        summary: AzureMapsRouteService.formatRouteSummary(
           leg.lengthInMeters,
           leg.travelTimeInSeconds
         ),
       });
     }
 
-    return legs;
+    return legDetails;
+  }
+
+  /**
+   * Gets valid cache entry if exists and not expired
+   */
+  private getValidCacheEntry(key: string): RouteResult | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    const isExpired = Date.now() - entry.timestamp > this.cacheTTL;
+    if (isExpired) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.result;
+  }
+
+  /**
+   * Clears cache entries older than TTL
+   */
+  private pruneCache(): void {
+    // Implement TTL-based cache pruning if needed
+    if (this.cache.size > 100) {
+      this.cache.clear();
+    }
+  }
+
+  /**
+   * Generates cache key from route parameters (includes start position)
+   */
+  private generateCacheKey(start: atlas.data.Position, points: RoutePoint[]): string {
+    return `${start[0]},${start[1]}-${points.map((p) => `${p.appointmentId}`).join(",")}`;
   }
 
   /**
    * Formats distance and duration into human-readable string
    */
-  private formatRouteSummary(distanceInMeters: number, durationInSeconds: number): string {
-    const distanceInKm = (distanceInMeters / 1000).toFixed(1);
+  private static formatRouteSummary(
+    distanceInMeters: number,
+    durationInSeconds: number
+  ): string {
+    const distanceInMiles = (distanceInMeters * 0.000621371).toFixed(1);
     const hours = Math.floor(durationInSeconds / 3600);
     const minutes = Math.floor((durationInSeconds % 3600) / 60);
 
-    let durationStr = "";
-    if (hours > 0) {
-      durationStr = `${hours}h ${minutes}m`;
-    } else {
-      durationStr = `${minutes}m`;
-    }
-
-    return `${distanceInKm} km • ${durationStr}`;
+    const durationStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+    return `${distanceInMiles} mi • ${durationStr}`;
   }
 
   /**
    * Converts route into GeoJSON LineString for visualization
    */
-  static createRouteGeoJSON(
-    routeCoordinates: atlas.data.Position[]
-  ): GeoJSON.LineString {
+  static createRouteGeoJSON(routeCoordinates: atlas.data.Position[]): GeoJSON.LineString {
     return {
       type: "LineString",
-      coordinates: routeCoordinates.map((pos) => [pos[0], pos[1]]),
+      coordinates: routeCoordinates,
     };
   }
 
@@ -221,19 +276,14 @@ export class AzureMapsRouteService {
     const hours = Math.floor(durationInSeconds / 3600);
     const minutes = Math.floor((durationInSeconds % 3600) / 60);
 
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    return `${minutes}m`;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   }
 
   /**
    * Formats total distance
    */
   static formatTotalDistance(distanceInMeters: number): string {
-    if (distanceInMeters >= 1000) {
-      return `${(distanceInMeters / 1000).toFixed(1)} km`;
-    }
-    return `${Math.round(distanceInMeters)} m`;
+    const distanceInMiles = distanceInMeters * 0.000621371;
+    return `${distanceInMiles.toFixed(1)} mi`;
   }
 }

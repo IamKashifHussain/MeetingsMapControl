@@ -832,8 +832,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
               onChange={handleDueFilterChange}
               className="filter-select"
             >
-              <option value="all">All</option>
-              <option value="overdue">Overdue</option>
               <option value="today">Today</option>
               <option value="tomorrow">Tomorrow</option>
               <option value="next7days">Next 7 days</option>
@@ -841,6 +839,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <option value="next90days">Next 90 days</option>
               <option value="next6months">Next 6 months</option>
               <option value="next12months">Next 12 months</option>
+              <option value="overdue">Overdue</option>
+              <option value="all">All</option>
             </select>
           </div>
 
@@ -867,7 +867,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               ) : routeData && showRoute ? (
                 <div className="route-info">
                   <span className="route-info-item">
-                    📏 {(routeData.totalDistance / 1000).toFixed(1)} km
+                    📏 {(routeData.totalDistance * 0.000621371).toFixed(1)} mi
                   </span>
                   <span className="route-info-item">
                     ⏱️ {formatRouteDuration(routeData.totalDuration)}
