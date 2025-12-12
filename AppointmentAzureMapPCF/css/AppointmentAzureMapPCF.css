@@ -1,8 +1,10 @@
+/* ========================================
+   BASE CONTAINER STYLES - Fluid Height
+   ======================================== */
 .pcf-appointment-map-root {
   width: 100%;
   height: 100%;
-  min-height: 768px;
-  max-height: 768px;
+  min-height: 300px; /* Absolute minimum for usability */
   position: relative;
   overflow: hidden;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
@@ -13,16 +15,52 @@
 #appointmentMapRoot {
   width: 100%;
   height: 100%;
-  min-height: 768px;
-  max-height: 768px;
+  min-height: inherit;
   box-sizing: border-box;
 }
 
+/* ========================================
+   CONTAINER HEIGHT CLASSES
+   For different canvas layouts
+   ======================================== */
+.pcf-height-small {
+  min-height: 400px;
+  max-height: 400px;
+}
+
+.pcf-height-medium {
+  min-height: 600px;
+  max-height: 600px;
+}
+
+.pcf-height-large {
+  min-height: 768px;
+  max-height: 768px;
+}
+
+.pcf-height-xlarge {
+  min-height: 900px;
+  max-height: 900px;
+}
+
+.pcf-height-full {
+  min-height: 100vh;
+  max-height: 100vh;
+}
+
+.pcf-height-auto {
+  min-height: 400px;
+  max-height: none;
+  height: auto;
+}
+
+/* ========================================
+   LOADING STATES
+   ======================================== */
 .pcf-loading-container {
   width: 100%;
   height: 100%;
-  min-height: 768px;
-  max-height: 768px;
+  min-height: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,15 +70,16 @@
 
 .pcf-loading-content {
   text-align: center;
-  padding: 40px;
+  padding: clamp(20px, 4vw, 40px);
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  max-width: 90%;
 }
 
 .pcf-loading-spinner {
-  width: 50px;
-  height: 50px;
+  width: clamp(30px, 6vw, 50px);
+  height: clamp(30px, 6vw, 50px);
   border: 4px solid #e9ecef;
   border-top: 4px solid #667eea;
   border-radius: 50%;
@@ -55,16 +94,18 @@
 
 .pcf-loading-text {
   color: #495057;
-  font-size: 15px;
+  font-size: clamp(13px, 2vw, 15px);
   font-weight: 600;
   margin: 0;
 }
 
+/* ========================================
+   ERROR STATES
+   ======================================== */
 .pcf-error-container {
   width: 100%;
   height: 100%;
-  min-height: 768px;
-  max-height: 768px;
+  min-height: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -75,29 +116,29 @@
 
 .pcf-error-content {
   text-align: center;
-  padding: 40px;
+  padding: clamp(20px, 4vw, 40px);
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  max-width: 500px;
+  max-width: min(500px, 90%);
   border: 2px solid #ff6b6b;
 }
 
 .pcf-error-icon {
-  font-size: 48px;
+  font-size: clamp(32px, 6vw, 48px);
   margin-bottom: 16px;
 }
 
 .pcf-error-title {
   color: #d13438;
-  font-size: 20px;
+  font-size: clamp(16px, 3vw, 20px);
   font-weight: 700;
   margin: 0 0 12px 0;
 }
 
 .pcf-error-message {
   color: #6c757d;
-  font-size: 14px;
+  font-size: clamp(12px, 2vw, 14px);
   line-height: 1.6;
   margin: 0;
 }
@@ -118,42 +159,27 @@
   color: #0c5460;
 }
 
-.pcfContainer {
-  height: 100%;
-  min-height: 768px;
-  max-height: 768px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-[data-control-name="AppointmentAzureMapPCF"] {
-  height: 100%;
-  min-height: 768px;
-  max-height: 768px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.ms-crm-InlineControl {
-  height: 100%;
-  min-height: 768px;
-  max-height: 768px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
+/* ========================================
+   DYNAMICS CONTAINER COMPATIBILITY
+   ======================================== */
+.pcfContainer,
+[data-control-name="AppointmentAzureMapPCF"],
+.ms-crm-InlineControl,
 .appmagic-control {
   height: 100%;
-  min-height: 768px;
-  max-height: 768px;
   width: 100%;
   box-sizing: border-box;
+  min-height: inherit;
 }
 
+/* ========================================
+   MAP CONTAINER
+   ======================================== */
 .azure-maps-control-container {
   position: relative;
   overflow: visible !important;
   z-index: 1000 !important;
+  height: 100%;
 }
 
 .appointment-azure-map-container {
@@ -163,95 +189,135 @@
   height: 100%;
 }
 
-@media (max-width: 1285px) {
-  .pcf-appointment-map-root,
-  #appointmentMapRoot,
-  .pcf-loading-container,
-  .pcf-error-container,
-  .pcfContainer,
-  [data-control-name="AppointmentAzureMapPCF"],
-  .ms-crm-InlineControl,
-  .appmagic-control {
+/* ========================================
+   RESPONSIVE BREAKPOINTS
+   Adjust based on available space
+   ======================================== */
+
+/* Large Desktop - Full experience */
+@media (min-width: 1920px) {
+  .pcf-appointment-map-root {
+    min-height: 800px;
+  }
+}
+
+/* Standard Desktop - Default experience */
+@media (min-width: 1280px) and (max-width: 1919px) {
+  .pcf-appointment-map-root {
     min-height: 700px;
-    max-height: 700px;
   }
 }
 
-@media (max-width: 1024px) {
-  .pcf-appointment-map-root,
-  #appointmentMapRoot,
-  .pcf-loading-container,
-  .pcf-error-container,
-  .pcfContainer,
-  [data-control-name="AppointmentAzureMapPCF"],
-  .ms-crm-InlineControl,
-  .appmagic-control {
+/* Small Desktop / Large Tablet */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .pcf-appointment-map-root {
     min-height: 600px;
-    max-height: 600px;
   }
 }
 
-@media (max-width: 768px) {
-  .pcf-appointment-map-root,
-  #appointmentMapRoot,
-  .pcf-loading-container,
-  .pcf-error-container,
-  .pcfContainer,
-  [data-control-name="AppointmentAzureMapPCF"],
-  .ms-crm-InlineControl,
-  .appmagic-control {
+/* Tablet Portrait */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .pcf-appointment-map-root {
     min-height: 500px;
-    max-height: 500px;
   }
-
+  
   .pcf-loading-content,
   .pcf-error-content {
-    padding: 30px;
-    max-width: 90%;
-  }
-
-  .pcf-error-icon {
-    font-size: 36px;
-  }
-
-  .pcf-error-title {
-    font-size: 18px;
-  }
-
-  .pcf-error-message {
-    font-size: 13px;
+    max-width: 85%;
   }
 }
 
-@media (max-width: 480px) {
-  .pcf-appointment-map-root,
-  #appointmentMapRoot,
-  .pcf-loading-container,
-  .pcf-error-container,
-  .pcfContainer,
-  [data-control-name="AppointmentAzureMapPCF"],
-  .ms-crm-InlineControl,
-  .appmagic-control {
-    min-height: 400px;
-    max-height: 400px;
+/* Mobile Landscape / Small Tablet */
+@media (min-width: 640px) and (max-width: 767px) {
+  .pcf-appointment-map-root {
+    min-height: 450px;
   }
+}
 
+/* Mobile Portrait */
+@media (max-width: 639px) {
+  .pcf-appointment-map-root {
+    min-height: 400px;
+  }
+  
   .pcf-loading-content,
   .pcf-error-content {
     padding: 20px;
-  }
-
-  .pcf-loading-spinner {
-    width: 40px;
-    height: 40px;
-    border-width: 3px;
-  }
-
-  .pcf-loading-text {
-    font-size: 13px;
+    max-width: 95%;
   }
 }
 
+/* ========================================
+   CONTAINER QUERIES (Modern browsers)
+   Better for canvas page columns
+   ======================================== */
+@container (min-width: 800px) {
+  .pcf-appointment-map-root {
+    min-height: 600px;
+  }
+}
+
+@container (min-width: 1200px) {
+  .pcf-appointment-map-root {
+    min-height: 700px;
+  }
+}
+
+/* ========================================
+   CANVAS PAGE SPECIFIC LAYOUTS
+   ======================================== */
+
+/* Single column layout */
+.canvas-single-column .pcf-appointment-map-root {
+  min-height: 600px;
+}
+
+/* Two column layout - Left panel */
+.canvas-two-column-left .pcf-appointment-map-root {
+  min-height: 500px;
+}
+
+/* Two column layout - Right panel */
+.canvas-two-column-right .pcf-appointment-map-root {
+  min-height: 500px;
+}
+
+/* Three column layout - Center */
+.canvas-three-column-center .pcf-appointment-map-root {
+  min-height: 450px;
+}
+
+/* Full width section */
+.canvas-full-width .pcf-appointment-map-root {
+  min-height: 700px;
+}
+
+/* Tab content */
+.canvas-tab-content .pcf-appointment-map-root {
+  min-height: 600px;
+}
+
+/* ========================================
+   ASPECT RATIO SUPPORT
+   ======================================== */
+.pcf-aspect-16-9 {
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+}
+
+.pcf-aspect-4-3 {
+  aspect-ratio: 4 / 3;
+  min-height: 0;
+}
+
+.pcf-aspect-square {
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
 .pcf-appointment-map-root *:focus-visible {
   outline: 3px solid rgba(102, 126, 234, 0.5);
   outline-offset: 2px;
@@ -275,6 +341,9 @@
   }
 }
 
+/* ========================================
+   PRINT STYLES
+   ======================================== */
 @media print {
   .pcf-loading-container,
   .pcf-error-container {
@@ -284,9 +353,13 @@
   .pcf-appointment-map-root {
     height: auto;
     min-height: 600px;
+    page-break-inside: avoid;
   }
 }
 
+/* ========================================
+   CSS VARIABLES FOR THEMING
+   ======================================== */
 .pcf-appointment-map-root {
   --pcf-primary-color: #0078d4;
   --pcf-primary-hover: #106ebe;
@@ -297,45 +370,13 @@
   --pcf-surface: #ffffff;
   --pcf-text-primary: #212529;
   --pcf-text-secondary: #6c757d;
+  --pcf-min-height: 400px;
+  --pcf-max-height: none;
 }
 
-.pcf-error-title {
-  color: var(--pcf-error-color, #d13438);
-}
-
-.pcf-config-error .pcf-error-title {
-  color: var(--pcf-warning-color, #856404);
-}
-
-.pcf-loading-spinner {
-  will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-.pcf-appointment-map-root,
-.pcf-loading-container,
-.pcf-error-container {
-  contain: layout style;
-}
-
-.pcf-loading-container,
-.pcf-error-container {
-  display: -ms-flexbox;
-  -ms-flex-align: center;
-  -ms-flex-pack: center;
-}
-
-.pcf-appointment-map-root {
-  -webkit-overflow-scrolling: touch;
-}
-
-@-moz-document url-prefix() {
-  .pcf-loading-spinner {
-    transform: translateZ(0);
-  }
-}
-
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
 .pcf-sr-only {
   position: absolute;
   width: 1px;
@@ -359,4 +400,39 @@
   transform: translateZ(0);
   will-change: transform;
   backface-visibility: hidden;
+}
+
+/* ========================================
+   PERFORMANCE OPTIMIZATIONS
+   ======================================== */
+.pcf-appointment-map-root,
+.pcf-loading-container,
+.pcf-error-container {
+  contain: layout style;
+}
+
+.pcf-loading-spinner {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* ========================================
+   BROWSER COMPATIBILITY
+   ======================================== */
+.pcf-loading-container,
+.pcf-error-container {
+  display: -ms-flexbox;
+  -ms-flex-align: center;
+  -ms-flex-pack: center;
+}
+
+.pcf-appointment-map-root {
+  -webkit-overflow-scrolling: touch;
+}
+
+@-moz-document url-prefix() {
+  .pcf-loading-spinner {
+    transform: translateZ(0);
+  }
 }

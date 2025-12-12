@@ -881,7 +881,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                 className="route-toggle-checkbox"
                 disabled={isCalculatingRoute}
               />
-              <span className="route-toggle-label">🗺️ Show Route</span>
+              <span className="route-toggle-label">Show Route</span>
             </label>
 
             <div className="route-status-placeholder">
