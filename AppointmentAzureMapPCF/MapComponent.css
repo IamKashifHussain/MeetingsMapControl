@@ -1,17 +1,15 @@
-/* Root container - Flexbox layout */
 .appointment-azure-map-container {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   min-height: 500px;
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
   background: #f8f9fa;
   overflow: hidden;
   box-sizing: border-box;
 }
 
-/* Filter Controls Wrapper - Fixed height container */
 .filter-controls-wrapper {
   flex: 0 0 auto;
   padding: 16px;
@@ -20,7 +18,6 @@
   min-height: auto;
 }
 
-/* Filter Controls Bar */
 .filter-controls-bar {
   width: 100%;
   background: rgba(255, 255, 255, 0.95);
@@ -28,10 +25,7 @@
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   padding: 16px 20px;
   border-radius: 16px;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
   display: flex;
   gap: 16px;
   align-items: center;
@@ -42,14 +36,10 @@
 }
 
 .filter-controls-bar:hover {
-  box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.12),
-    0 4px 12px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   transform: translateY(-1px);
 }
 
-/* Map Container - Takes remaining space AFTER filters */
 .map-content-wrapper {
   flex: 1 1 auto;
   position: relative;
@@ -71,7 +61,6 @@
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-/* User Info Section */
 .user-info-section {
   flex: 0 0 auto;
   padding: 4px 0;
@@ -98,9 +87,7 @@
   gap: 8px;
 }
 
-/* Filter Controls */
-.filter-section,
-.filter-due-section {
+.filter-section, .filter-due-section {
   flex: 0 0 auto;
   min-width: 200px;
 }
@@ -147,7 +134,6 @@
   transform: translateY(-1px);
 }
 
-/* Route Toggle Section */
 .route-toggle-section {
   flex: 0 0 auto;
   display: flex;
@@ -248,9 +234,34 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Actions Section */
-.actions-section,
-.action-section {
+@keyframes slideUp {
+  from {
+    transform: translate(-50%, calc(-50% + 30px));
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.action-section, .actions-section {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -292,8 +303,7 @@
   box-shadow: none;
 }
 
-.appointment-counter,
-.appointment-count {
+.appointment-counter, .appointment-count {
   font-size: 13px;
   color: #6c757d;
   font-weight: 600;
@@ -304,7 +314,6 @@
   border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
-/* Loading Overlay */
 .loading-overlay {
   position: absolute;
   top: 50%;
@@ -318,6 +327,7 @@
   text-align: center;
   z-index: 1000;
   animation: fadeInScale 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
 }
 
 .loading-spinner {
@@ -331,17 +341,6 @@
   margin: 0 auto 20px;
 }
 
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
 .loading-text {
   margin: 0;
   color: #495057;
@@ -349,7 +348,6 @@
   font-weight: 600;
 }
 
-/* Error Overlay */
 .error-overlay {
   position: absolute;
   top: 50%;
@@ -364,6 +362,7 @@
   z-index: 1000;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 2px solid #ff6b6b;
+  pointer-events: auto;
 }
 
 .error-title {
@@ -381,10 +380,7 @@
   line-height: 1.6;
 }
 
-/* Empty State Overlay */
-.empty-state-overlay,
-.no-appointments-overlay,
-.overlay-message {
+.empty-state-overlay, .no-appointments-overlay, .overlay-message {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -397,22 +393,16 @@
   max-width: 450px;
   z-index: 1000;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
 }
 
-.empty-state-icon,
-.no-appointments-icon {
+.empty-state-icon, .no-appointments-icon {
   font-size: 64px;
   margin-bottom: 20px;
   animation: bounce 2s ease-in-out infinite;
 }
 
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-.empty-state-title,
-.no-appointments-title {
+.empty-state-title, .no-appointments-title {
   color: #212529;
   margin-top: 0;
   margin-bottom: 12px;
@@ -420,210 +410,258 @@
   font-weight: 700;
 }
 
-.empty-state-message,
-.no-appointments-message {
+.empty-state-message, .no-appointments-message {
   color: #6c757d;
   margin: 0;
   font-size: 15px;
   line-height: 1.6;
 }
 
-/* User Popup */
 .user-popup-container {
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-  min-width: 300px;
-  padding: 20px;
+  width: 100%;
+  max-width: 350px;
+  min-width: 280px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .user-popup-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 3px solid;
-  border-image: linear-gradient(90deg, #00d4ff 0%, #667eea 100%) 1;
-}
-
-.user-popup-icon {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  filter: drop-shadow(0 2px 4px rgba(0, 212, 255, 0.3));
-}
-
-.user-popup-title {
-  font-size: 18px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-}
-
-.user-popup-field {
+  gap: 10px;
   margin-bottom: 12px;
 }
 
-.user-popup-field-label {
-  font-size: 10px;
+.user-popup-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-popup-title {
+  margin: 0;
+  padding: 0;
+  font-size: 16px;
   font-weight: 700;
-  color: #6c757d;
+  color: #212529;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-popup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.user-popup-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  display: block;
-  margin-bottom: 6px;
+  letter-spacing: 0.5px;
 }
 
 .user-popup-field-value {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 13px;
   color: #212529;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-popup-address {
-  font-size: 14px;
-  color: #495057;
-  line-height: 1.6;
-  margin-top: 4px;
+  font-size: 13px;
+  color: #212529;
+  font-weight: 500;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
-/* Appointment Popup */
 .appointment-popup-container {
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-  min-width: 340px;
-  max-width: 420px;
-  max-height: 450px;
+  width: 100%;
+  max-width: 350px;
+  min-width: 280px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-sizing: border-box;
+  max-height: 500px;
   display: flex;
   flex-direction: column;
 }
 
 .appointment-popup-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 10px 16px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 700;
-  margin-bottom: 16px;
-  text-align: center;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   flex-shrink: 0;
 }
 
 .appointment-popup-list {
   display: flex;
   flex-direction: column;
+  gap: 0;
+  width: 100%;
   overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 500px;
+  max-height: 380px;
+  padding-right: 4px;
 }
 
 .appointment-popup-list::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .appointment-popup-list::-webkit-scrollbar-track {
-  background: #f1f3f5;
-  border-radius: 4px;
+  background: #f1f1f1;
+  border-radius: 3px;
 }
 
 .appointment-popup-list::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 4px;
+  background: #667eea;
+  border-radius: 3px;
 }
 
 .appointment-popup-list::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  background: #5568d3;
 }
 
 .appointment-popup-item {
-  padding: 20px;
-  flex-shrink: 0;
+  padding: 12px 0;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .appointment-popup-item-separator {
-  border-top: 2px solid #e9ecef;
+  border-top: 1px solid #e9ecef;
+  padding-top: 12px;
 }
 
 .appointment-popup-subject {
-  font-size: 17px;
+  margin: 0;
+  padding: 0;
+  font-size: 15px;
   font-weight: 700;
   color: #212529;
-  margin: 0 0 14px 0;
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
 }
 
 .appointment-popup-details {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 6px;
+  background: #f8f9fa;
+  padding: 8px 10px;
+  border-radius: 4px;
 }
 
 .appointment-popup-detail-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
+  gap: 8px;
+  font-size: 13px;
   color: #495057;
-  padding: 8px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.appointment-popup-detail-row:hover {
-  background: #e9ecef;
-  transform: translateX(4px);
+  line-height: 1.4;
+  min-height: 20px;
 }
 
 .appointment-popup-detail-icon {
-  font-size: 18px;
-  width: 24px;
   flex-shrink: 0;
+  font-size: 14px;
+  display: inline-block;
+  min-width: 16px;
+  text-align: center;
 }
 
 .appointment-popup-detail-text {
-  font-weight: 600;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .appointment-popup-regarding {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-  border-left: 4px solid #667eea;
+  background: #f0f4ff;
+  border-left: 3px solid #667eea;
+  padding: 10px 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .appointment-popup-regarding-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #6c757d;
+  font-size: 12px;
+  font-weight: 600;
+  color: #667eea;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  display: block;
-  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .appointment-popup-regarding-value {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 13px;
   color: #212529;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .appointment-popup-description {
-  font-size: 14px;
+  font-size: 13px;
   color: #495057;
-  line-height: 1.6;
-  padding: 12px;
+  line-height: 1.5;
+  padding: 8px 10px;
   background: #f8f9fa;
-  border-radius: 10px;
-  border-left: 4px solid #764ba2;
+  border-radius: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
-/* Azure Maps Marker Animation */
 .atlas-html-marker {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -634,19 +672,6 @@
   filter: drop-shadow(0 8px 16px rgba(102, 126, 234, 0.4));
 }
 
-/* Animations */
-@keyframes slideUp {
-  from {
-    transform: translate(-50%, calc(-50% + 30px));
-    opacity: 0;
-  }
-  to {
-    transform: translate(-50%, -50%);
-    opacity: 1;
-  }
-}
-
-/* Azure Maps Controls */
 .atlas-control {
   display: block !important;
   visibility: visible !important;
@@ -738,129 +763,35 @@
   pointer-events: auto;
 }
 
-/* ============================================
-   Responsive Design
-   ============================================ */
-
-@media (max-width: 1200px) {
-  .filter-controls-wrapper {
-    padding: 12px;
-  }
-
-  .filter-controls-bar {
-    gap: 12px;
-  }
-
-  .filter-section,
-  .filter-due-section {
-    min-width: 180px;
-  }
+.user-popup-title, .user-popup-field-value, .appointment-popup-subject,
+.appointment-popup-detail-text, .appointment-popup-regarding-label,
+.appointment-popup-regarding-value, .appointment-popup-badge {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 992px) {
-  .filter-controls-wrapper {
-    padding: 10px;
-  }
-
-  .filter-controls-bar {
-    padding: 14px 16px;
-  }
-
-  .route-info {
-    flex-direction: column;
-    gap: 6px;
-  }
+.user-popup-address, .appointment-popup-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-@media (max-width: 768px) {
-  .filter-controls-wrapper {
-    padding: 8px;
-  }
-
-  .filter-controls-bar {
-    padding: 12px;
-    gap: 10px;
-  }
-
-  .filter-section,
-  .filter-due-section,
-  .route-toggle-section {
-    flex: 1 1 100%;
-    min-width: auto;
-  }
-
-  .actions-section,
-  .action-section {
-    margin-left: 0;
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .appointment-popup-container {
-    min-width: 280px;
-    max-width: 320px;
-  }
-
-  .loading-overlay,
-  .error-overlay,
-  .empty-state-overlay {
-    padding: 30px;
-    max-width: 90%;
-    pointer-events: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .appointment-azure-map-container {
-    min-height: 400px;
-  }
-
-  .filter-controls-wrapper {
-    padding: 6px;
-  }
-
-  .filter-controls-bar {
-    border-radius: 12px;
-  }
-
-  .filter-select {
-    font-size: 13px;
-    padding: 9px 12px;
-  }
-
-  .refresh-button {
-    padding: 9px 16px;
-    font-size: 13px;
-  }
-
-  .appointment-popup-container {
-    min-width: 260px;
-  }
-
-  .appointment-popup-item {
-    padding: 16px;
-  }
-}
-
-/* ============================================
-   Accessibility
-   ============================================ */
-
-.filter-controls-bar:focus-within {
-  outline: 3px solid rgba(102, 126, 234, 0.5);
-  outline-offset: 2px;
-}
-
-.filter-select:focus,
-.refresh-button:focus,
-.route-toggle-checkbox:focus {
+.filter-select:focus, .refresh-button:focus, .route-toggle-checkbox:focus {
   outline: none;
 }
 
+.user-popup-title:hover, .user-popup-field-value:hover, .user-popup-address:hover,
+.appointment-popup-subject:hover, .appointment-popup-detail-text:hover,
+.appointment-popup-regarding-label:hover, .appointment-popup-regarding-value:hover,
+.appointment-popup-description:hover {
+  cursor: help;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -868,15 +799,174 @@
 }
 
 @media (prefers-contrast: high) {
+  .filter-controls-bar { border: 3px solid #000; }
+  .filter-select { border-width: 3px; }
+  .refresh-button { border: 2px solid #000; }
+  .user-popup-container, .appointment-popup-container { border: 2px solid currentColor; }
+  .appointment-popup-regarding { border-left-width: 4px; }
+  .user-popup-address, .appointment-popup-subject, .appointment-popup-detail-text,
+  .appointment-popup-regarding-value { border-bottom: 1px dotted currentColor; }
+}
+
+@media (min-width: 768px) {
+  .user-popup-container, .appointment-popup-container {
+    width: 350px;
+    max-width: 350px;
+    padding: 16px;
+  }
+  .user-popup-title { font-size: 16px; }
+  .appointment-popup-subject { font-size: 15px; }
+  .user-popup-field-label, .appointment-popup-regarding-label { font-size: 12px; }
+  .user-popup-field-value, .user-popup-address, .appointment-popup-detail-text,
+  .appointment-popup-regarding-value, .appointment-popup-description { font-size: 13px; }
+  .appointment-popup-badge {
+    font-size: 14px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .filter-controls-wrapper { padding: 12px; }
+  .filter-controls-bar { gap: 12px; }
+  .filter-section, .filter-due-section { min-width: 180px; }
+}
+
+@media (max-width: 992px) {
+  .filter-controls-wrapper { padding: 10px; }
+  .filter-controls-bar { padding: 14px 16px; }
+  .route-info {
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .filter-controls-wrapper { padding: 8px; }
   .filter-controls-bar {
-    border: 3px solid #000;
+    padding: 12px;
+    gap: 10px;
   }
+  .filter-section, .filter-due-section, .route-toggle-section {
+    flex: 1 1 100%;
+    min-width: auto;
+  }
+  .action-section, .actions-section {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .user-popup-container, .appointment-popup-container {
+    width: 320px;
+    max-width: 320px;
+    padding: 14px;
+    max-height: 450px;
+  }
+  .appointment-popup-list { max-height: 330px; }
+  .user-popup-title { font-size: 15px; }
+  .appointment-popup-subject { font-size: 14px; }
+  .user-popup-field-label, .appointment-popup-regarding-label { font-size: 11px; }
+  .user-popup-field-value, .user-popup-address, .appointment-popup-detail-text,
+  .appointment-popup-regarding-value, .appointment-popup-description { font-size: 12px; }
+  .appointment-popup-badge {
+    font-size: 13px;
+    padding: 9px 12px;
+    margin-bottom: 10px;
+  }
+  .appointment-popup-details {
+    padding: 6px 8px;
+    gap: 5px;
+  }
+  .appointment-popup-regarding {
+    padding: 8px 10px;
+    gap: 5px;
+  }
+  .appointment-popup-detail-row {
+    font-size: 12px;
+    min-height: 18px;
+  }
+  .user-popup-field {
+    margin-bottom: 8px;
+    gap: 3px;
+  }
+  .user-popup-header {
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+  .loading-overlay, .error-overlay, .empty-state-overlay {
+    padding: 30px;
+    max-width: 90%;
+    pointer-events: auto;
+  }
+}
 
+@media (max-width: 480px) {
+  .appointment-azure-map-container { min-height: 400px; }
+  .filter-controls-wrapper { padding: 6px; }
+  .filter-controls-bar { border-radius: 12px; }
   .filter-select {
-    border-width: 3px;
+    font-size: 13px;
+    padding: 9px 12px;
   }
-
   .refresh-button {
-    border: 2px solid #000;
+    padding: 9px 16px;
+    font-size: 13px;
+  }
+  .user-popup-container, .appointment-popup-container {
+    width: 280px;
+    max-width: 280px;
+    padding: 12px;
+    max-height: 400px;
+  }
+  .appointment-popup-list { max-height: 280px; }
+  .user-popup-title { font-size: 14px; }
+  .appointment-popup-subject {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .user-popup-field-label, .appointment-popup-regarding-label {
+    font-size: 10px;
+    letter-spacing: 0.3px;
+  }
+  .user-popup-field-value, .user-popup-address, .appointment-popup-detail-text,
+  .appointment-popup-regarding-value, .appointment-popup-description { font-size: 11px; }
+  .appointment-popup-badge {
+    font-size: 12px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    gap: 6px;
+  }
+  .appointment-popup-details {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .appointment-popup-detail-row {
+    font-size: 11px;
+    gap: 6px;
+    min-height: 16px;
+  }
+  .appointment-popup-detail-icon {
+    font-size: 12px;
+    min-width: 14px;
+  }
+  .appointment-popup-regarding {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+  .appointment-popup-description {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+  .user-popup-field {
+    margin-bottom: 6px;
+    gap: 2px;
+  }
+  .user-popup-header {
+    margin-bottom: 8px;
+    gap: 6px;
+  }
+  .user-popup-icon {
+    width: 20px;
+    height: 20px;
   }
 }

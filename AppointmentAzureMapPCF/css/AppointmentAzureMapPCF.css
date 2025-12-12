@@ -1,31 +1,33 @@
-
-/* PCF Root Container - Ensures proper sizing */
 .pcf-appointment-map-root {
   width: 100%;
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
   background: #f8f9fa;
+  box-sizing: border-box;
 }
 
-/* React root container */
 #appointmentMapRoot {
   width: 100%;
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
+  box-sizing: border-box;
 }
 
-/* Loading state for PCF initialization */
 .pcf-loading-container {
   width: 100%;
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f8f9fa;
+  box-sizing: border-box;
 }
 
 .pcf-loading-content {
@@ -58,16 +60,17 @@
   margin: 0;
 }
 
-/* Error state for PCF */
 .pcf-error-container {
   width: 100%;
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #f8f9fa;
   padding: 20px;
+  box-sizing: border-box;
 }
 
 .pcf-error-content {
@@ -99,7 +102,6 @@
   margin: 0;
 }
 
-/* Configuration error specific styling */
 .pcf-config-error {
   border-color: #ffc107;
 }
@@ -108,7 +110,6 @@
   color: #856404;
 }
 
-/* User context error specific styling */
 .pcf-user-error {
   border-color: #17a2b8;
 }
@@ -117,62 +118,90 @@
   color: #0c5460;
 }
 
-/* Ensure proper height inheritance in Dynamics 365 */
 .pcfContainer {
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Power Apps specific container adjustments */
 [data-control-name="AppointmentAzureMapPCF"] {
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Model-driven app form adjustments */
 .ms-crm-InlineControl {
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Canvas app adjustments */
 .appmagic-control {
   height: 100%;
-  min-height: 500px;
+  min-height: 768px;
+  max-height: 768px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-/* Prevent Azure Maps controls from being clipped */
 .azure-maps-control-container {
   position: relative;
   overflow: visible !important;
   z-index: 1000 !important;
 }
 
-/* Ensure proper stacking context */
 .appointment-azure-map-container {
   position: relative;
   z-index: 0;
+  width: 100%;
+  height: 100%;
 }
 
-/* ============================================
-   Responsive Adjustments for PCF
-   ============================================ */
+@media (max-width: 1285px) {
+  .pcf-appointment-map-root,
+  #appointmentMapRoot,
+  .pcf-loading-container,
+  .pcf-error-container,
+  .pcfContainer,
+  [data-control-name="AppointmentAzureMapPCF"],
+  .ms-crm-InlineControl,
+  .appmagic-control {
+    min-height: 700px;
+    max-height: 700px;
+  }
+}
 
-/* Tablet view */
 @media (max-width: 1024px) {
   .pcf-appointment-map-root,
   #appointmentMapRoot,
   .pcf-loading-container,
-  .pcf-error-container {
-    min-height: 450px;
+  .pcf-error-container,
+  .pcfContainer,
+  [data-control-name="AppointmentAzureMapPCF"],
+  .ms-crm-InlineControl,
+  .appmagic-control {
+    min-height: 600px;
+    max-height: 600px;
   }
 }
+
 @media (max-width: 768px) {
   .pcf-appointment-map-root,
   #appointmentMapRoot,
   .pcf-loading-container,
-  .pcf-error-container {
-    min-height: 400px;
+  .pcf-error-container,
+  .pcfContainer,
+  [data-control-name="AppointmentAzureMapPCF"],
+  .ms-crm-InlineControl,
+  .appmagic-control {
+    min-height: 500px;
+    max-height: 500px;
   }
 
   .pcf-loading-content,
@@ -194,13 +223,17 @@
   }
 }
 
-/* Small mobile view */
 @media (max-width: 480px) {
   .pcf-appointment-map-root,
   #appointmentMapRoot,
   .pcf-loading-container,
-  .pcf-error-container {
-    min-height: 350px;
+  .pcf-error-container,
+  .pcfContainer,
+  [data-control-name="AppointmentAzureMapPCF"],
+  .ms-crm-InlineControl,
+  .appmagic-control {
+    min-height: 400px;
+    max-height: 400px;
   }
 
   .pcf-loading-content,
@@ -219,18 +252,11 @@
   }
 }
 
-
-/* ============================================
-   Accessibility Improvements
-   ============================================ */
-
-/* Focus visible for interactive elements */
 .pcf-appointment-map-root *:focus-visible {
   outline: 3px solid rgba(102, 126, 234, 0.5);
   outline-offset: 2px;
 }
 
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .pcf-loading-spinner {
     animation: none;
@@ -238,7 +264,6 @@
   }
 }
 
-/* High contrast mode support */
 @media (prefers-contrast: high) {
   .pcf-loading-content,
   .pcf-error-content {
@@ -249,9 +274,7 @@
     border-width: 5px;
   }
 }
-/* ============================================
-   Print Styles
-   ============================================ */
+
 @media print {
   .pcf-loading-container,
   .pcf-error-container {
@@ -264,11 +287,6 @@
   }
 }
 
-/* ============================================
-   Dynamics 365 Theme Integration
-   ============================================ */
-
-/* Unified Interface theme variables support */
 .pcf-appointment-map-root {
   --pcf-primary-color: #0078d4;
   --pcf-primary-hover: #106ebe;
@@ -281,7 +299,6 @@
   --pcf-text-secondary: #6c757d;
 }
 
-/* Apply theme colors to error states */
 .pcf-error-title {
   color: var(--pcf-error-color, #d13438);
 }
@@ -290,29 +307,18 @@
   color: var(--pcf-warning-color, #856404);
 }
 
-/* ============================================
-   Performance Optimizations
-   ============================================ */
-
-/* Use GPU acceleration for animations */
 .pcf-loading-spinner {
   will-change: transform;
   transform: translateZ(0);
   backface-visibility: hidden;
 }
 
-/* Optimize rendering */
 .pcf-appointment-map-root,
 .pcf-loading-container,
 .pcf-error-container {
   contain: layout style;
 }
 
-/* ============================================
-   Browser Compatibility Fixes
-   ============================================ */
-
-/* IE11 flexbox fixes (if still supported) */
 .pcf-loading-container,
 .pcf-error-container {
   display: -ms-flexbox;
@@ -320,23 +326,16 @@
   -ms-flex-pack: center;
 }
 
-/* Safari flexbox fixes */
 .pcf-appointment-map-root {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Firefox specific fixes */
 @-moz-document url-prefix() {
   .pcf-loading-spinner {
     transform: translateZ(0);
   }
 }
 
-/* ============================================
-   Utility Classes
-   ============================================ */
-
-/* Hide element but keep it accessible */
 .pcf-sr-only {
   position: absolute;
   width: 1px;
@@ -349,7 +348,6 @@
   border: 0;
 }
 
-/* Prevent text selection during interactions */
 .pcf-no-select {
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -357,7 +355,6 @@
   user-select: none;
 }
 
-/* Force hardware acceleration */
 .pcf-gpu-accelerated {
   transform: translateZ(0);
   will-change: transform;

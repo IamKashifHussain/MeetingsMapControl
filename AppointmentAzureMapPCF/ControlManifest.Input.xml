@@ -8,7 +8,6 @@
     description-key="Displays appointments on Azure Maps"
     control-type="standard">
     
-    <!-- Add user ID property -->
     <property 
       name="userId" 
       display-name-key="User_Id" 
