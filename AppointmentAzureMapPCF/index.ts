@@ -335,7 +335,6 @@ export class AppointmentAzureMapPCF
 
     this.applyFilters();
     
-    // Increment trigger to force component refresh and re-geocode
     this.refreshTrigger++;
     
     this.renderComponent();
@@ -395,7 +394,7 @@ export class AppointmentAzureMapPCF
 
     this.root.render(
       React.createElement(MapComponent, {
-        key: this.refreshTrigger, // Force component remount on refresh
+        key: this.refreshTrigger, 
         appointments: this.filteredAppointments,
         allAppointmentsCount: this.allAppointments.length,
         azureMapsKey: this.azureMapsKey,

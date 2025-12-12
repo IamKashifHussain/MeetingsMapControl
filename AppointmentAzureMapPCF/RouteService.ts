@@ -64,9 +64,6 @@ export class AzureMapsRouteService {
     this.azureMapsKey = azureMapsKey;
   }
 
-  /**
-   * Calculates a route through multiple waypoints in chronological order
-   */
   async calculateChronologicalRoute(
     startPosition: atlas.data.Position,
     routePoints: RoutePoint[]
@@ -75,7 +72,6 @@ export class AzureMapsRouteService {
       return null;
     }
 
-    // Sort points by appointment scheduled start time
     const sortedPoints = [...routePoints].sort(
       (a, b) => a.scheduledstart.getTime() - b.scheduledstart.getTime()
     );
@@ -97,7 +93,6 @@ export class AzureMapsRouteService {
 
       const result = this.buildRouteResult(startPosition, sortedPoints, routeData);
       
-      // Cache the result with timestamp
       this.cache.set(cacheKey, { result, timestamp: Date.now() });
       this.apiCallCount++;
       console.log(`API call made. Total calls: ${this.apiCallCount}`);
@@ -109,9 +104,6 @@ export class AzureMapsRouteService {
     }
   }
 
-  /**
-   * Builds route result from API response
-   */
   private buildRouteResult(
     startPosition: atlas.data.Position,
     sortedPoints: RoutePoint[],
@@ -127,9 +119,6 @@ export class AzureMapsRouteService {
     };
   }
 
-  /**
-   * Efficiently extracts coordinates from legs
-   */
   private extractRouteCoordinates(legs: RouteApiLeg[]): atlas.data.Position[] {
     const coords: atlas.data.Position[] = [];
     
@@ -142,9 +131,6 @@ export class AzureMapsRouteService {
     return coords;
   }
 
-  /**
-   * Fetches route data from Azure Maps Directions API
-   */
   private async getRoute(waypoints: atlas.data.Position[]): Promise<RouteApiResponse> {
     const waypointString = waypoints.map((pos) => `${pos[1]},${pos[0]}`).join(":");
 
@@ -166,16 +152,12 @@ export class AzureMapsRouteService {
     return await response.json();
   }
 
-  /**
-   * Builds detailed leg information from route data
-   */
   private buildRouteLegDetails(
     sortedPoints: RoutePoint[],
     legs: RouteApiLeg[]
   ): RouteLeg[] {
     const legDetails: RouteLeg[] = [];
 
-    // First leg: from user location to first appointment
     if (legs.length > 0) {
       const firstPoint = sortedPoints[0];
       legDetails.push({
@@ -190,7 +172,6 @@ export class AzureMapsRouteService {
       });
     }
 
-    // Subsequent legs: between appointments
     for (let i = 1; i < legs.length; i++) {
       const leg = legs[i];
       const fromPoint = sortedPoints[i - 1];
@@ -211,9 +192,6 @@ export class AzureMapsRouteService {
     return legDetails;
   }
 
-  /**
-   * Gets valid cache entry if exists and not expired
-   */
   private getValidCacheEntry(key: string): RouteResult | null {
     const entry = this.cache.get(key);
     if (!entry) return null;
@@ -227,26 +205,16 @@ export class AzureMapsRouteService {
     return entry.result;
   }
 
-  /**
-   * Clears cache entries older than TTL
-   */
   private pruneCache(): void {
-    // Implement TTL-based cache pruning if needed
     if (this.cache.size > 100) {
       this.cache.clear();
     }
   }
 
-  /**
-   * Generates cache key from route parameters (includes start position)
-   */
   private generateCacheKey(start: atlas.data.Position, points: RoutePoint[]): string {
     return `${start[0]},${start[1]}-${points.map((p) => `${p.appointmentId}`).join(",")}`;
   }
 
-  /**
-   * Formats distance and duration into human-readable string
-   */
   private static formatRouteSummary(
     distanceInMeters: number,
     durationInSeconds: number
@@ -259,9 +227,6 @@ export class AzureMapsRouteService {
     return `${distanceInMiles} mi • ${durationStr}`;
   }
 
-  /**
-   * Converts route into GeoJSON LineString for visualization
-   */
   static createRouteGeoJSON(routeCoordinates: atlas.data.Position[]): GeoJSON.LineString {
     return {
       type: "LineString",
@@ -269,9 +234,6 @@ export class AzureMapsRouteService {
     };
   }
 
-  /**
-   * Formats total duration
-   */
   static formatTotalDuration(durationInSeconds: number): string {
     const hours = Math.floor(durationInSeconds / 3600);
     const minutes = Math.floor((durationInSeconds % 3600) / 60);
@@ -279,9 +241,6 @@ export class AzureMapsRouteService {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   }
 
-  /**
-   * Formats total distance
-   */
   static formatTotalDistance(distanceInMeters: number): string {
     const distanceInMiles = distanceInMeters * 0.000621371;
     return `${distanceInMiles.toFixed(1)} mi`;

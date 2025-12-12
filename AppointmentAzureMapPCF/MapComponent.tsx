@@ -75,9 +75,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isCalculatingRoute, setIsCalculatingRoute] =
     React.useState<boolean>(false);
 
-  /* ---------------------------
-     Utility Functions
-     --------------------------- */
   const calculateDistance = (pos1: atlas.data.Position, pos2: atlas.data.Position): number => {
     const dx = pos1[0] - pos2[0];
     const dy = pos1[1] - pos2[1];
@@ -93,7 +90,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     index: number,
     totalCount: number
   ): atlas.data.Position => {
-    // Create a circular offset pattern to avoid overlapping markers
     const angleStep = (Math.PI * 2) / Math.max(totalCount, 3);
     const angle = angleStep * index;
     const radius = 0.0008; // ~80 meters offset
@@ -104,9 +100,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return [offsetLon, offsetLat];
   };
 
-  /* ---------------------------
-     Map lifecycle
-     --------------------------- */
   React.useEffect(() => {
     if (!mapRef.current) {
       setErrorMessage("Map container not found");
@@ -135,7 +128,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [azureMapsKey, currentUserAddress]);
 
   React.useEffect(() => {
-    // update markers when appointments, showRoute, or userLocation change
     if (mapInstanceRef.current && popupRef.current && !isLoading && userLocation) {
       abortControllerRef.current = new AbortController();
       void updateMarkers();
@@ -175,9 +167,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  /* ---------------------------
-     Initialize Map
-     --------------------------- */
   const initializeMap = () => {
     if (!mapRef.current || !azureMapsKey) return;
 
@@ -258,9 +247,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  /* ---------------------------
-     Geocoding helpers
-     --------------------------- */
   const geocodeAddress = async (
     address: string
   ): Promise<atlas.data.Position | null> => {
@@ -340,9 +326,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return results;
   };
 
-  /* ---------------------------
-     User marker
-     --------------------------- */
   const geocodeAndDisplayUserLocation = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -383,9 +366,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  /* ---------------------------
-     Data helpers
-     --------------------------- */
   const fetchRegardingAddress = async (
     regardingobjectid: ComponentFramework.EntityReference
   ): Promise<string | null> => {
@@ -438,9 +418,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  /* ---------------------------
-     Popup & UI formatting
-     --------------------------- */
   const formatDateTime = (date: Date): string => {
     if (!date) return "Not specified";
     try {
@@ -564,9 +541,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     `;
   };
 
-  /* ---------------------------
-     Map fit/zoom
-     --------------------------- */
   const fitMapToMarkers = () => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -592,9 +566,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  /* ---------------------------
-     Main updateMarkers - DETECTS & OFFSETS DUPLICATE LOCATIONS
-     --------------------------- */
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -606,13 +577,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     popup.close();
 
-    // Remove previous markers
     markersRef.current.forEach((m) => {
       map.markers.remove(m.marker);
     });
     markersRef.current = [];
 
-    // Clear previous route and route data
     if (routeSourceRef.current) routeSourceRef.current.clear();
     setRouteData(null);
 
@@ -621,7 +590,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
-    // Fetch regarding addresses and group appointments by address
     const addressPromises = appointments.map(async (appt) => {
       if (!appt.regardingobjectid) return null;
       const address = await fetchRegardingAddress(appt.regardingobjectid);
@@ -648,7 +616,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     console.log(`[Markers] Found ${uniqueAddresses.length} unique addresses`);
 
-    // Geocode unique addresses
     const geocodeResults = await Promise.all(
       uniqueAddresses.map((addr) =>
         geocodeAddress(addr).then((pos) => ({ address: addr, position: pos }))
@@ -661,7 +628,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       geocodeResults.filter((r) => r.position).map((r) => [r.address, r.position])
     );
 
-    // Sort by appointment time
     const sortedAddresses = uniqueAddresses.sort((a, b) => {
       const apptA = addressMap.get(a)?.[0];
       const apptB = addressMap.get(b)?.[0];
@@ -669,7 +635,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return apptA.scheduledstart.getTime() - apptB.scheduledstart.getTime();
     });
 
-    // Group locations by position to detect duplicates
     const positionToAddresses = new Map<string, string[]>();
     for (const address of sortedAddresses) {
       const position = geocodeMap.get(address);
@@ -685,7 +650,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const routePoints: RoutePoint[] = [];
     let markerCount = 0;
 
-    // Create markers with offset for duplicate positions
     for (const address of sortedAddresses) {
       const appts = addressMap.get(address);
       const position = geocodeMap.get(address);
@@ -698,7 +662,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       markerCount++;
 
-      // If there are multiple locations with same coordinates, offset them
       let displayPosition = position;
       if (hasDuplicates) {
         displayPosition = offsetPositionSlightly(position, indexInGroup, addressesAtPosition.length);
@@ -726,7 +689,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       markersRef.current.push({ marker, appointment: appts[0], position });
 
       routePoints.push({
-        position, // Use original position for routing
+        position,
         address,
         appointmentId: appts[0].id,
         subject: appts[0].subject,
@@ -736,7 +699,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     console.log(`[Markers] Created ${markerCount} markers for ${routePoints.length} locations`);
 
-    // If route requested, calculate and display
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
       void calculateAndDisplayRoute(userLocation.position, routePoints);
     } else if (!showRoute && routeSourceRef.current) {
@@ -744,13 +706,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setRouteData(null);
     }
 
-    // Fit map to user + markers
     fitMapToMarkers();
   };
 
-  /* ---------------------------
-     Routing
-     --------------------------- */
   const getCacheKey = (startPos: atlas.data.Position, points: RoutePoint[]) =>
     JSON.stringify([startPos, points.map((p) => p.position)]);
 
@@ -773,7 +731,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   ) => {
     if (!routeServiceRef.current || !routeSourceRef.current) return;
 
-    // Filter out appointments at same location as user
     const filteredPoints = routePoints.filter(
       (point) => !positionsAreEqual(point.position, startPosition)
     );
@@ -826,9 +783,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  /* ---------------------------
-     Controls handlers
-     --------------------------- */
   const handleDueFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onFilterChange({ dueFilter: e.target.value as DueFilter });
   };
@@ -842,9 +796,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onRouteToggle(newShowRoute);
   };
 
-  /* ---------------------------
-     Render
-     --------------------------- */
   return (
     <div className="appointment-azure-map-container">
       <div className="filter-controls-wrapper">
