@@ -75,13 +75,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isCalculatingRoute, setIsCalculatingRoute] =
     React.useState<boolean>(false);
 
-  const calculateDistance = (pos1: atlas.data.Position, pos2: atlas.data.Position): number => {
+  const calculateDistance = (
+    pos1: atlas.data.Position,
+    pos2: atlas.data.Position
+  ): number => {
     const dx = pos1[0] - pos2[0];
     const dy = pos1[1] - pos2[1];
     return Math.sqrt(dx * dx + dy * dy);
   };
 
-  const positionsAreEqual = (pos1: atlas.data.Position, pos2: atlas.data.Position): boolean => {
+  const positionsAreEqual = (
+    pos1: atlas.data.Position,
+    pos2: atlas.data.Position
+  ): boolean => {
     return calculateDistance(pos1, pos2) < DISTANCE_THRESHOLD;
   };
 
@@ -128,7 +134,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [azureMapsKey, currentUserAddress]);
 
   React.useEffect(() => {
-    if (mapInstanceRef.current && popupRef.current && !isLoading && userLocation) {
+    if (
+      mapInstanceRef.current &&
+      popupRef.current &&
+      !isLoading &&
+      userLocation
+    ) {
       abortControllerRef.current = new AbortController();
       void updateMarkers();
     }
@@ -283,7 +294,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
             result.position.lat,
           ];
           geocodeCacheRef.current[normalizedAddress] = position;
-          console.log(`[Geocode] ${address} → [${position[0]}, ${position[1]}]`);
+          console.log(
+            `[Geocode] ${address} → [${position[0]}, ${position[1]}]`
+          );
           return position;
         }
       }
@@ -326,6 +339,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return results;
   };
 
+  // Updated function for MapComponent.tsx
+
   const geocodeAndDisplayUserLocation = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -361,8 +376,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
       userMarkerRef.current = userMarker;
       console.log(`[User Marker] Added at [${position[0]}, ${position[1]}]`);
     } else {
+      // Geocoding failed - show error to user
       console.warn("[User Location] Failed to geocode user address");
       setUserLocation(null);
+      setErrorMessage(
+        `Unable to locate your address: "${currentUserAddress}". Please update your address in the system user settings.`
+      );
+      setIsLoading(false);
     }
   };
 
@@ -464,7 +484,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return `${totalMinutes}m`;
   };
 
-  const createUserPopupContent = (userName: string, address: string): string => {
+  const createUserPopupContent = (
+    userName: string,
+    address: string
+  ): string => {
     return `
       <div class="user-popup-container">
         <div class="user-popup-header">
@@ -501,21 +524,33 @@ const MapComponent: React.FC<MapComponentProps> = ({
             .map((appt, index) => {
               const startTime = formatDateTime(appt.scheduledstart);
               const endTime = formatDateTime(appt.scheduledend);
-              const duration = calculateDuration(appt.scheduledstart, appt.scheduledend);
-              const description = appt.description || "No description available";
+              const duration = calculateDuration(
+                appt.scheduledstart,
+                appt.scheduledend
+              );
+              const description =
+                appt.description || "No description available";
               const regarding = appt.regardingobjectidname || "";
 
               return `
-                <div class="appointment-popup-item ${index > 0 ? "appointment-popup-item-separator" : ""}">
-                  <h4 class="appointment-popup-subject">${escapeHtml(appt.subject)}</h4>
+                <div class="appointment-popup-item ${
+                  index > 0 ? "appointment-popup-item-separator" : ""
+                }">
+                  <h4 class="appointment-popup-subject">${escapeHtml(
+                    appt.subject
+                  )}</h4>
                   <div class="appointment-popup-details">
                     <div class="appointment-popup-detail-row">
                       <span class="appointment-popup-detail-icon">📅</span>
-                      <span class="appointment-popup-detail-text">${escapeHtml(startTime)}</span>
+                      <span class="appointment-popup-detail-text">${escapeHtml(
+                        startTime
+                      )}</span>
                     </div>
                     <div class="appointment-popup-detail-row">
                       <span class="appointment-popup-detail-icon">🕐</span>
-                      <span class="appointment-popup-detail-text">${escapeHtml(endTime)}</span>
+                      <span class="appointment-popup-detail-text">${escapeHtml(
+                        endTime
+                      )}</span>
                     </div>
                     <div class="appointment-popup-detail-row">
                       <span class="appointment-popup-detail-icon">⏱️</span>
@@ -524,12 +559,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   </div>
                   ${
                     regarding
-                      ? `<div class="appointment-popup-regarding"><span class="appointment-popup-regarding-label">👤 Regarding:</span><div class="appointment-popup-regarding-value">${escapeHtml(regarding)}</div></div>`
+                      ? `<div class="appointment-popup-regarding"><span class="appointment-popup-regarding-label">👤 Regarding:</span><div class="appointment-popup-regarding-value">${escapeHtml(
+                          regarding
+                        )}</div></div>`
                       : ""
                   }
                   ${
                     description && description !== "No description available"
-                      ? `<div class="appointment-popup-description">${escapeHtml(description)}</div>`
+                      ? `<div class="appointment-popup-description">${escapeHtml(
+                          description
+                        )}</div>`
                       : ""
                   }
                 </div>
@@ -566,6 +605,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
+  // Modified updateMarkers function for MapComponent.tsx
+
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -590,10 +631,37 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
+    // NEW: Modified address fetching logic with priority
     const addressPromises = appointments.map(async (appt) => {
-      if (!appt.regardingobjectid) return null;
-      const address = await fetchRegardingAddress(appt.regardingobjectid);
-      return { appt, address };
+      let address: string | null = null;
+
+      // 1. First priority: Check appointment's location field if not blank
+      if (appt.location && appt.location.trim()) {
+        const locationAddress = appt.location.trim();
+        console.log(
+          `[Address Priority] Using location field for "${appt.subject}": ${locationAddress}`
+        );
+        return { appt, address: locationAddress, source: "location" };
+      }
+
+      // 2. Fallback: Check regarding entity's address (location is blank)
+      console.log(
+        `[Address Priority] Location field blank for "${appt.subject}", checking regarding entity`
+      );
+      if (appt.regardingobjectid) {
+        address = await fetchRegardingAddress(appt.regardingobjectid);
+        if (address && address.trim()) {
+          console.log(
+            `[Address Priority] ✓ Using regarding address for "${appt.subject}"`
+          );
+          return { appt, address: address.trim(), source: "regarding" };
+        }
+      }
+
+      console.log(
+        `[Address Priority] ✗ No valid address found for "${appt.subject}"`
+      );
+      return null;
     });
 
     const addressResults = await Promise.all(addressPromises);
@@ -603,18 +671,22 @@ const MapComponent: React.FC<MapComponentProps> = ({
     for (const r of addressResults) {
       if (r && r.address && r.address.trim()) {
         const normalizedAddress = r.address.trim();
-        if (!addressMap.has(normalizedAddress)) addressMap.set(normalizedAddress, []);
+        if (!addressMap.has(normalizedAddress))
+          addressMap.set(normalizedAddress, []);
         addressMap.get(normalizedAddress)!.push(r.appt);
       }
     }
 
     const uniqueAddresses = Array.from(addressMap.keys());
     if (uniqueAddresses.length === 0) {
+      console.log(`[Markers] No appointments with valid addresses to display`);
       fitMapToMarkers();
       return;
     }
 
-    console.log(`[Markers] Found ${uniqueAddresses.length} unique addresses`);
+    console.log(
+      `[Markers] Found ${uniqueAddresses.length} unique addresses from ${appointments.length} appointments`
+    );
 
     const geocodeResults = await Promise.all(
       uniqueAddresses.map((addr) =>
@@ -625,7 +697,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (abortControllerRef.current?.signal.aborted) return;
 
     const geocodeMap = new Map(
-      geocodeResults.filter((r) => r.position).map((r) => [r.address, r.position])
+      geocodeResults
+        .filter((r) => r.position)
+        .map((r) => [r.address, r.position])
     );
 
     const sortedAddresses = uniqueAddresses.sort((a, b) => {
@@ -664,9 +738,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       let displayPosition = position;
       if (hasDuplicates) {
-        displayPosition = offsetPositionSlightly(position, indexInGroup, addressesAtPosition.length);
+        displayPosition = offsetPositionSlightly(
+          position,
+          indexInGroup,
+          addressesAtPosition.length
+        );
         console.log(
-          `[Markers] Duplicate location detected for "${address.substring(0, 50)}". Offsetting marker ${indexInGroup + 1} of ${addressesAtPosition.length}`
+          `[Markers] Duplicate location detected for "${address.substring(
+            0,
+            50
+          )}". Offsetting marker ${indexInGroup + 1} of ${
+            addressesAtPosition.length
+          }`
         );
       }
 
@@ -697,7 +780,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
     }
 
-    console.log(`[Markers] Created ${markerCount} markers for ${routePoints.length} locations`);
+    console.log(
+      `[Markers] Created ${markerCount} markers for ${routePoints.length} locations`
+    );
 
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
       void calculateAndDisplayRoute(userLocation.position, routePoints);
@@ -736,7 +821,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
     );
 
     if (filteredPoints.length === 0) {
-      console.warn("[Route] All appointments are at user location, skipping route calculation");
+      console.warn(
+        "[Route] All appointments are at user location, skipping route calculation"
+      );
       setRouteData(null);
       setIsCalculatingRoute(false);
       return;
@@ -762,7 +849,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         filteredPoints
       );
 
-      if (result && result.routeCoordinates && result.routeCoordinates.length > 0) {
+      if (
+        result &&
+        result.routeCoordinates &&
+        result.routeCoordinates.length > 0
+      ) {
         routeCacheRef.current.set(cacheKey, { result, timestamp: Date.now() });
         setRouteData(result);
         displayRouteOnMap(result);
@@ -839,7 +930,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
               {isCalculatingRoute ? (
                 <div className="route-calculating-indicator">
                   <div className="route-calculating-spinner" />
-                  <span className="route-calculating-text">Optimizing route...</span>
+                  <span className="route-calculating-text">
+                    Optimizing route...
+                  </span>
                 </div>
               ) : routeData && showRoute ? (
                 <div className="route-info">
