@@ -1279,3 +1279,175 @@
     border: 2px solid #000;
   }
 }
+
+/* Get Directions Button - Clean Minimal Design */
+.appointment-popup-directions-btn {
+  width: 100%;
+  padding: clamp(10px, 2vw, 12px) clamp(14px, 2.5vw, 18px);
+  margin-top: clamp(10px, 2vw, 14px);
+  font-size: clamp(12px, 2vw, 14px);
+  font-weight: 400;
+  background: #ffffff;
+  color: #323130;
+  border: 1px solid #d1d1d1;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(8px, 1.5vw, 10px);
+  white-space: nowrap;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  text-align: left;
+  box-shadow: none;
+}
+
+.appointment-popup-directions-btn:hover:not(:disabled) {
+  background: #f3f2f1;
+  border-color: #c8c6c4;
+  box-shadow: none;
+  transform: none;
+}
+
+.appointment-popup-directions-btn:active:not(:disabled) {
+  background: #edebe9;
+  border-color: #a19f9d;
+}
+
+.appointment-popup-directions-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #ffffff;
+  border-color: #d1d1d1;
+}
+
+.appointment-popup-directions-btn:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+  border-color: #0078d4;
+}
+
+/* Direction Icon Styling */
+.appointment-popup-directions-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: clamp(14px, 2.2vw, 16px);
+  color: #323130;
+  width: 16px;
+  height: 16px;
+}
+
+/* SVG icon for the directions arrow */
+.appointment-popup-directions-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Text label styling */
+.appointment-popup-directions-text {
+  flex: 1;
+  color: #323130;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: 1.2;
+}
+
+/* Separator between appointments */
+.appointment-popup-item-separator {
+  border-top: 1px solid #e9ecef;
+  padding-top: clamp(8px, 1.5vw, 12px);
+  margin-top: clamp(8px, 1.5vw, 12px);
+}
+
+/* Mobile responsiveness for button */
+@media (max-width: 479px) {
+  .appointment-popup-directions-btn {
+    font-size: 13px;
+    padding: 10px 14px;
+    margin-top: 10px;
+  }
+  
+  .appointment-popup-directions-icon {
+    font-size: 15px;
+  }
+}
+
+/* Tablet responsiveness */
+@media (min-width: 480px) and (max-width: 767px) {
+  .appointment-popup-directions-btn {
+    font-size: 13px;
+    padding: 11px 15px;
+    margin-top: 11px;
+  }
+}
+
+/* Large screens */
+@media (min-width: 768px) {
+  .appointment-popup-directions-btn {
+    font-size: 14px;
+    padding: 12px 16px;
+    margin-top: 12px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .appointment-popup-directions-btn {
+    border-width: 2px;
+    border-color: #000000;
+  }
+
+  .appointment-popup-directions-btn:hover:not(:disabled) {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .appointment-popup-directions-btn:disabled {
+    border-color: #6c757d;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .appointment-popup-directions-btn {
+    transition: none;
+  }
+}
+
+/* Hover state for touch devices */
+@media (hover: none) {
+  .appointment-popup-directions-btn:active:not(:disabled) {
+    background: #edebe9;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .appointment-popup-directions-btn {
+    background: #252423;
+    color: #f3f2f1;
+    border-color: #484644;
+  }
+
+  .appointment-popup-directions-btn:hover:not(:disabled) {
+    background: #2f2d2c;
+    border-color: #5d5b59;
+  }
+
+  .appointment-popup-directions-btn:active:not(:disabled) {
+    background: #3b3937;
+  }
+
+  .appointment-popup-directions-icon {
+    color: #f3f2f1;
+  }
+
+  .appointment-popup-directions-text {
+    color: #f3f2f1;
+  }
+}

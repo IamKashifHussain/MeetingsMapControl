@@ -31,6 +31,7 @@ interface MarkerInfo {
   marker: atlas.HtmlMarker;
   appointment: AppointmentRecord;
   position: atlas.data.Position;
+  address: string;
 }
 
 interface CachedRoute {
@@ -106,6 +107,37 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return [offsetLon, offsetLat];
   };
 
+  const openBingMapDirections = React.useCallback((destinationAddress: string, appointmentSubject: string) => {
+    console.log("[Directions] Function called");
+    console.log("[Directions] Address:", destinationAddress);
+    console.log("[Directions] Subject:", appointmentSubject);
+    
+    if (!destinationAddress || destinationAddress.trim() === "") {
+      console.warn("[Directions] No destination address available");
+      alert("No address available");
+      return;
+    }
+
+    try {
+      const encodedAddress = encodeURIComponent(destinationAddress.trim());
+      const bingMapsUrl = `https://www.bing.com/maps?q=${encodedAddress}`;
+
+      console.log("[Directions] Opening Bing Maps with location:", bingMapsUrl);
+      
+      const newWindow = window.open(bingMapsUrl, "_blank");
+      
+      if (newWindow === null) {
+        console.error("[Directions] Pop-up was blocked by browser");
+        alert("Pop-up blocked! Please allow pop-ups for this site.");
+      } else {
+        console.log("[Directions] ✓ Bing Maps opened showing:", appointmentSubject);
+      }
+    } catch (error) {
+      console.error("[Directions] Error opening Bing Maps:", error);
+      alert("Error opening Bing Maps. Check console for details.");
+    }
+  }, []);
+
   React.useEffect(() => {
     if (!mapRef.current) {
       setErrorMessage("Map container not found");
@@ -147,6 +179,34 @@ const MapComponent: React.FC<MapComponentProps> = ({
       abortControllerRef.current?.abort();
     };
   }, [appointments, showRoute, userLocation, isLoading]);
+
+  // Setup event delegation for directions buttons in popup
+  React.useEffect(() => {
+    const handlePopupClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('appointment-popup-directions-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const address = target.getAttribute('data-address');
+        const subject = target.getAttribute('data-subject');
+        
+        console.log("[Button Click] Address:", address, "Subject:", subject);
+        
+        if (address && subject) {
+          openBingMapDirections(address, subject);
+        } else {
+          console.error('[Button Click] Missing address or subject');
+        }
+      }
+    };
+
+    document.addEventListener('click', handlePopupClick, true);
+    
+    return () => {
+      document.removeEventListener('click', handlePopupClick, true);
+    };
+  }, [openBingMapDirections]);
 
   const cleanup = () => {
     abortControllerRef.current?.abort();
@@ -339,8 +399,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return results;
   };
 
-  // Updated function for MapComponent.tsx
-
   const geocodeAndDisplayUserLocation = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -376,7 +434,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       userMarkerRef.current = userMarker;
       console.log(`[User Marker] Added at [${position[0]}, ${position[1]}]`);
     } else {
-      // Geocoding failed - show error to user
       console.warn("[User Location] Failed to geocode user address");
       setUserLocation(null);
       setErrorMessage(
@@ -508,7 +565,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     `;
   };
 
-  const createPopupContent = (appts: AppointmentRecord[]): string => {
+  const createPopupContent = (appts: AppointmentRecord[], address: string): string => {
     if (appts.length === 0) return "<div>No appointment data</div>";
     const isSingleAppointment = appts.length === 1;
 
@@ -571,6 +628,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         )}</div>`
                       : ""
                   }
+                  <button class="appointment-popup-directions-btn" data-address="${escapeHtml(address)}" data-subject="${escapeHtml(appt.subject)}">
+                     Directions
+                  </button>
                 </div>
               `;
             })
@@ -605,8 +665,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     }
   };
 
-  // Modified updateMarkers function for MapComponent.tsx
-
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
@@ -631,11 +689,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return;
     }
 
-    // NEW: Modified address fetching logic with priority
     const addressPromises = appointments.map(async (appt) => {
       let address: string | null = null;
 
-      // 1. First priority: Check appointment's location field if not blank
       if (appt.location && appt.location.trim()) {
         const locationAddress = appt.location.trim();
         console.log(
@@ -644,7 +700,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         return { appt, address: locationAddress, source: "location" };
       }
 
-      // 2. Fallback: Check regarding entity's address (location is blank)
       console.log(
         `[Address Priority] Location field blank for "${appt.subject}", checking regarding entity`
       );
@@ -762,14 +817,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
       map.events.add("click", marker, () => {
         popup.close();
         popup.setOptions({
-          content: createPopupContent(appts),
+          content: createPopupContent(appts, address),
           position: displayPosition,
         });
         popup.open(map);
       });
 
       map.markers.add(marker);
-      markersRef.current.push({ marker, appointment: appts[0], position });
+      markersRef.current.push({ marker, appointment: appts[0], position, address });
 
       routePoints.push({
         position,
