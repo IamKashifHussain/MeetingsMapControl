@@ -1425,29 +1425,3 @@
     background: #edebe9;
   }
 }
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .appointment-popup-directions-btn {
-    background: #252423;
-    color: #f3f2f1;
-    border-color: #484644;
-  }
-
-  .appointment-popup-directions-btn:hover:not(:disabled) {
-    background: #2f2d2c;
-    border-color: #5d5b59;
-  }
-
-  .appointment-popup-directions-btn:active:not(:disabled) {
-    background: #3b3937;
-  }
-
-  .appointment-popup-directions-icon {
-    color: #f3f2f1;
-  }
-
-  .appointment-popup-directions-text {
-    color: #f3f2f1;
-  }
-}
