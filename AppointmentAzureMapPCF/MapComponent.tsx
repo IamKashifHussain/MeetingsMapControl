@@ -629,7 +629,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
                       : ""
                   }
                   <button class="appointment-popup-directions-btn" data-address="${escapeHtml(address)}" data-subject="${escapeHtml(appt.subject)}">
-                     Directions
+                     Get Directions
                   </button>
                 </div>
               `;
