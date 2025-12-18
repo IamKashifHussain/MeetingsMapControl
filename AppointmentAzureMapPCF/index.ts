@@ -122,7 +122,7 @@ export class AppointmentAzureMapPCF
     try {
       const result = await context.webAPI.retrieveMultipleRecords(
         "ti_mapconfiguration",
-        "?$select=ti_azuremapskey&$filter=ti_activationstatus eq 1&$top=1"
+        "?$select=ti_azuremapskey&$filter=ti_activationstatus eq true&$top=1"
       );
 
       if (result.entities.length > 0) {
@@ -295,6 +295,40 @@ export class AppointmentAzureMapPCF
         );
         break;
       }
+      case "customDateRange": {
+        // Filter appointments within the custom date range
+        if (this.currentFilter.customDateRange) {
+          const { startDate, endDate } = this.currentFilter.customDateRange;
+
+          // Get UTC date components for start date
+          const startUtcYear = startDate.getUTCFullYear();
+          const startUtcMonth = startDate.getUTCMonth();
+          const startUtcDate = startDate.getUTCDate();
+
+          // Get UTC date components for end date
+          const endUtcYear = endDate.getUTCFullYear();
+          const endUtcMonth = endDate.getUTCMonth();
+          const endUtcDate = endDate.getUTCDate();
+
+          // Create start of day (00:00:00) in UTC for start date
+          const rangeStartOfDay = new Date(
+            Date.UTC(startUtcYear, startUtcMonth, startUtcDate, 0, 0, 0, 0)
+          );
+
+          // Create end of day (23:59:59) in UTC for end date
+          const rangeEndOfDay = new Date(
+            Date.UTC(endUtcYear, endUtcMonth, endUtcDate, 23, 59, 59, 999)
+          );
+
+          filtered = filtered.filter((appt) => {
+            return (
+              appt.scheduledstart >= rangeStartOfDay &&
+              appt.scheduledstart <= rangeEndOfDay
+            );
+          });
+        }
+        break;
+      }
       case "all":
         break;
       case "today":
@@ -334,9 +368,9 @@ export class AppointmentAzureMapPCF
     ]);
 
     this.applyFilters();
-    
+
     this.refreshTrigger++;
-    
+
     this.renderComponent();
   };
 
@@ -394,7 +428,7 @@ export class AppointmentAzureMapPCF
 
     this.root.render(
       React.createElement(MapComponent, {
-        key: this.refreshTrigger, 
+        key: this.refreshTrigger,
         appointments: this.filteredAppointments,
         allAppointmentsCount: this.allAppointments.length,
         azureMapsKey: this.azureMapsKey,

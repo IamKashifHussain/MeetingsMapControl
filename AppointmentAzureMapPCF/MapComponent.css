@@ -1425,3 +1425,68 @@
     background: #edebe9;
   }
 }
+
+/* Additional CSS for Calendar Integration - Add to MapComponent.css */
+
+/* Selected Date Badge */
+.selected-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #e6f4ff;
+  border: 1px solid #4facfe;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #0078d4;
+  margin-left: 8px;
+  font-weight: 500;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.clear-date-btn {
+  background: transparent;
+  border: none;
+  color: #0078d4;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  line-height: 1;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.clear-date-btn:hover {
+  background-color: rgba(79, 172, 254, 0.2);
+  color: #d13438;
+  transform: scale(1.1);
+}
+
+.clear-date-btn:active {
+  transform: scale(0.95);
+}
+
+/* Update filter-section to wrap properly */
+.filter-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

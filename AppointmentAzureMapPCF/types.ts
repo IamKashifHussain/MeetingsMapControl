@@ -22,10 +22,17 @@ export type DueFilter =
   | "next30days"
   | "next90days"
   | "next6months"
-  | "next12months";
+  | "next12months"
+  | "customDateRange";
+
+export interface DateRange {
+  startDate: Date;
+  endDate: Date;
+}
 
 export interface FilterOptions {
   dueFilter: DueFilter;
+  customDateRange?: DateRange;
 }
 
 export interface UserLocation {

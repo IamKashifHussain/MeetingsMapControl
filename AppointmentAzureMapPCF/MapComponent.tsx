@@ -8,8 +8,10 @@ import {
   DueFilter,
   FilterOptions,
   UserLocation,
+  DateRange,
 } from "./types";
 import { AzureMapsRouteService, RoutePoint, RouteResult } from "./RouteService";
+import DatePicker from "./Datepicker";
 
 interface MapComponentProps {
   appointments: AppointmentRecord[];
@@ -75,6 +77,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [routeData, setRouteData] = React.useState<RouteResult | null>(null);
   const [isCalculatingRoute, setIsCalculatingRoute] =
     React.useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = React.useState<boolean>(false);
 
   const calculateDistance = (
     pos1: atlas.data.Position,
@@ -541,6 +544,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return `${totalMinutes}m`;
   };
 
+  const formatSelectedDateRange = (): string => {
+    if (currentFilter.customDateRange) {
+      const start = currentFilter.customDateRange.startDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      const end = currentFilter.customDateRange.endDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      return `${start} - ${end}`;
+    }
+    return "";
+  };
+
   const createUserPopupContent = (
     userName: string,
     address: string
@@ -930,7 +950,28 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   const handleDueFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onFilterChange({ dueFilter: e.target.value as DueFilter });
+    const newValue = e.target.value as DueFilter;
+    
+    if (newValue === "customDateRange") {
+      setShowDatePicker(true);
+    } else {
+      onFilterChange({ dueFilter: newValue, customDateRange: undefined });
+    }
+  };
+
+  const handleDateRangeSelect = (range: DateRange) => {
+    onFilterChange({ 
+      dueFilter: "customDateRange", 
+      customDateRange: range 
+    });
+  };
+
+  const handleDatePickerClose = () => {
+    setShowDatePicker(false);
+    
+    if (currentFilter.dueFilter === "customDateRange" && !currentFilter.customDateRange) {
+      onFilterChange({ dueFilter: "today", customDateRange: undefined });
+    }
   };
 
   const handleRefreshClick = () => {
@@ -950,6 +991,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             <div className="user-info-label">Showing appointments for</div>
             <div className="user-info-name">👤 {currentUserName}</div>
           </div>
+          
           <div className="filter-section">
             <label className="filter-label">Due</label>
             <select
@@ -965,8 +1007,23 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <option value="next6months">Next 6 months</option>
               <option value="next12months">Next 12 months</option>
               <option value="overdue">Overdue</option>
+              <option value="customDateRange">Custom Date Range</option>
               <option value="all">All</option>
             </select>
+            
+            {currentFilter.dueFilter === "customDateRange" && currentFilter.customDateRange && (
+              <div className="selected-date-badge">
+                📅 {formatSelectedDateRange()}
+                <button
+                  className="clear-date-btn"
+                  onClick={() => onFilterChange({ dueFilter: "today", customDateRange: undefined })}
+                  title="Clear date range"
+                  aria-label="Clear date range"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="route-toggle-section">
@@ -1022,6 +1079,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <p className="no-appointments-message">
                 {allAppointmentsCount === 0
                   ? "No appointments available."
+                  : currentFilter.dueFilter === "customDateRange" && currentFilter.customDateRange
+                  ? `No appointments found for ${formatSelectedDateRange()}.`
                   : "No appointments match the current filter criteria."}
               </p>
             </div>
@@ -1042,6 +1101,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
           )}
         </div>
       </div>
+
+      {showDatePicker && (
+        <DatePicker
+          dateRange={currentFilter.customDateRange}
+          onDateRangeSelect={handleDateRangeSelect}
+          onClose={handleDatePickerClose}
+        />
+      )}
     </div>
   );
 };
