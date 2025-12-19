@@ -187,7 +187,7 @@ export class AppointmentAzureMapPCF
     try {
       const query =
         `?$select=subject,scheduledstart,scheduledend,location,description,activityid,_regardingobjectid_value` +
-        `&$filter=_ownerid_value eq ${this.currentUserId} and isonlinemeeting eq false` +
+        `&$filter=_ownerid_value eq ${this.currentUserId} and isonlinemeeting eq false and (statecode eq 0 or statecode eq 3)` +
         `&$orderby=scheduledstart asc&$top=5000`;
 
       const result = await context.webAPI.retrieveMultipleRecords(

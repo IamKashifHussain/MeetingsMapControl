@@ -11,7 +11,7 @@ import {
   DateRange,
 } from "./types";
 import { AzureMapsRouteService, RoutePoint, RouteResult } from "./RouteService";
-import DatePicker from "./Datepicker";
+import DatePicker from "./components/Datepicker";
 
 interface MapComponentProps {
   appointments: AppointmentRecord[];
