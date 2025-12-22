@@ -14,7 +14,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
   onClose,
 }) => {
   const [currentMonth, setCurrentMonth] = React.useState<Date>(() => {
-    return dateRange?.startDate || new Date();
+    const date = dateRange?.startDate || new Date();
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
   });
 
   const [viewMode, setViewMode] = React.useState<"month" | "year">("month");
@@ -36,57 +37,58 @@ const DatePicker: React.FC<DatePickerProps> = ({
   ];
 
   const getDaysInMonth = (date: Date): Date[] => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
+    const year = date.getUTCFullYear();
+    const month = date.getUTCMonth();
+    const firstDay = new Date(Date.UTC(year, month, 1));
+    const lastDay = new Date(Date.UTC(year, month + 1, 0));
+    const daysInMonth = lastDay.getUTCDate();
 
     const days: Date[] = [];
 
-    const firstDayOfWeek = firstDay.getDay();
+    const firstDayOfWeek = firstDay.getUTCDay();
     for (let i = 0; i < firstDayOfWeek; i++) {
       days.push(new Date(0)); // Empty cell marker
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day, 12, 0, 0, 0));
+      // Create dates at midnight UTC
+      days.push(new Date(Date.UTC(year, month, day, 0, 0, 0, 0)));
     }
 
     return days;
   };
 
   const days = getDaysInMonth(currentMonth);
-  const currentYear = currentMonth.getFullYear();
-  const currentMonthIndex = currentMonth.getMonth();
+  const currentYear = currentMonth.getUTCFullYear();
+  const currentMonthIndex = currentMonth.getUTCMonth();
 
   const goToPreviousMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)
-    );
+    const year = currentMonth.getUTCFullYear();
+    const month = currentMonth.getUTCMonth();
+    setCurrentMonth(new Date(Date.UTC(year, month - 1, 1)));
   };
 
   const goToNextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)
-    );
+    const year = currentMonth.getUTCFullYear();
+    const month = currentMonth.getUTCMonth();
+    setCurrentMonth(new Date(Date.UTC(year, month + 1, 1)));
   };
 
   const goToPreviousYear = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear() - 1, currentMonth.getMonth(), 1)
-    );
+    const year = currentMonth.getUTCFullYear();
+    const month = currentMonth.getUTCMonth();
+    setCurrentMonth(new Date(Date.UTC(year - 1, month, 1)));
   };
 
   const goToNextYear = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear() + 1, currentMonth.getMonth(), 1)
-    );
+    const year = currentMonth.getUTCFullYear();
+    const month = currentMonth.getUTCMonth();
+    setCurrentMonth(new Date(Date.UTC(year + 1, month, 1)));
   };
 
   const goToToday = () => {
     const today = new Date();
-    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setCurrentMonth(new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1)));
     setViewMode("month");
   };
 
@@ -132,7 +134,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
   };
 
   const handleMonthClick = (monthIndex: number) => {
-    setCurrentMonth(new Date(currentYear, monthIndex, 1));
+    setCurrentMonth(new Date(Date.UTC(currentYear, monthIndex, 1)));
     setViewMode("month");
   };
 
@@ -140,27 +142,27 @@ const DatePicker: React.FC<DatePickerProps> = ({
     if (date.getTime() === 0) return false;
     const today = new Date();
     return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
+      date.getUTCDate() === today.getUTCDate() &&
+      date.getUTCMonth() === today.getUTCMonth() &&
+      date.getUTCFullYear() === today.getUTCFullYear()
     );
   };
 
   const isStartDate = (date: Date): boolean => {
     if (date.getTime() === 0 || !tempStartDate) return false;
     return (
-      date.getDate() === tempStartDate.getDate() &&
-      date.getMonth() === tempStartDate.getMonth() &&
-      date.getFullYear() === tempStartDate.getFullYear()
+      date.getUTCDate() === tempStartDate.getUTCDate() &&
+      date.getUTCMonth() === tempStartDate.getUTCMonth() &&
+      date.getUTCFullYear() === tempStartDate.getUTCFullYear()
     );
   };
 
   const isEndDate = (date: Date): boolean => {
     if (date.getTime() === 0 || !tempEndDate) return false;
     return (
-      date.getDate() === tempEndDate.getDate() &&
-      date.getMonth() === tempEndDate.getMonth() &&
-      date.getFullYear() === tempEndDate.getFullYear()
+      date.getUTCDate() === tempEndDate.getUTCDate() &&
+      date.getUTCMonth() === tempEndDate.getUTCMonth() &&
+      date.getUTCFullYear() === tempEndDate.getUTCFullYear()
     );
   };
 
@@ -174,8 +176,8 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const isCurrentMonth = (monthIndex: number): boolean => {
     const today = new Date();
     return (
-      monthIndex === today.getMonth() &&
-      currentYear === today.getFullYear()
+      monthIndex === today.getUTCMonth() &&
+      currentYear === today.getUTCFullYear()
     );
   };
 
@@ -185,11 +187,13 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const formatDateDisplay = (date: Date | null): string => {
     if (!date) return "";
-    return date.toLocaleDateString("en-US", {
+    // Display the UTC date as-is (don't convert to local timezone)
+    return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-    });
+      timeZone: "UTC"
+    }).format(date);
   };
 
   return (
@@ -231,7 +235,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
           <div className="date-picker-days">
             {days.map((date, index) => {
               const isEmpty = date.getTime() === 0;
-              const isOutsideMonth = !isEmpty && date.getMonth() !== currentMonthIndex;
+              const isOutsideMonth = !isEmpty && date.getUTCMonth() !== currentMonthIndex;
               const startDte = isStartDate(date);
               const endDte = isEndDate(date);
               const inRange = isInRange(date);
@@ -249,7 +253,7 @@ const DatePicker: React.FC<DatePickerProps> = ({
                   onClick={() => handleDateClick(date)}
                   disabled={isEmpty}
                 >
-                  {isEmpty ? "" : date.getDate()}
+                  {isEmpty ? "" : date.getUTCDate()}
                 </button>
               );
             })}

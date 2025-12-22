@@ -41,6 +41,14 @@ interface CachedRoute {
   timestamp: number;
 }
 
+// Status code constants for appointments
+const AppointmentStatus = {
+  Open: 0,
+  Completed: 1,
+  Canceled: 2,
+  Scheduled: 3,
+} as const;
+
 const MapComponent: React.FC<MapComponentProps> = ({
   appointments,
   allAppointmentsCount,
@@ -78,6 +86,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [isCalculatingRoute, setIsCalculatingRoute] =
     React.useState<boolean>(false);
   const [showDatePicker, setShowDatePicker] = React.useState<boolean>(false);
+  const [updatingAppointments, setUpdatingAppointments] = React.useState<
+    Set<string>
+  >(new Set());
+  const [showCloseDialog, setShowCloseDialog] = React.useState<boolean>(false);
+  const [selectedAppointment, setSelectedAppointment] =
+    React.useState<AppointmentRecord | null>(null);
+  const [selectedStatus, setSelectedStatus] = React.useState<number>(
+    AppointmentStatus.Completed
+  );
 
   const calculateDistance = (
     pos1: atlas.data.Position,
@@ -110,36 +127,124 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return [offsetLon, offsetLat];
   };
 
-  const openBingMapDirections = React.useCallback((destinationAddress: string, appointmentSubject: string) => {
-    console.log("[Directions] Function called");
-    console.log("[Directions] Address:", destinationAddress);
-    console.log("[Directions] Subject:", appointmentSubject);
-    
-    if (!destinationAddress || destinationAddress.trim() === "") {
-      console.warn("[Directions] No destination address available");
-      alert("No address available");
-      return;
-    }
-
-    try {
-      const encodedAddress = encodeURIComponent(destinationAddress.trim());
-      const bingMapsUrl = `https://www.bing.com/maps?q=${encodedAddress}`;
-
-      console.log("[Directions] Opening Bing Maps with location:", bingMapsUrl);
-      
-      const newWindow = window.open(bingMapsUrl, "_blank");
-      
-      if (newWindow === null) {
-        console.error("[Directions] Pop-up was blocked by browser");
-        alert("Pop-up blocked! Please allow pop-ups for this site.");
-      } else {
-        console.log("[Directions] ✓ Bing Maps opened showing:", appointmentSubject);
+  const updateAppointmentStatus = React.useCallback(
+    async (appointmentId: string, newStateCode: number) => {
+      // Allow only Completed or Canceled
+      if (
+        newStateCode !== AppointmentStatus.Completed &&
+        newStateCode !== AppointmentStatus.Canceled
+      ) {
+        console.warn(
+          `[Status Update] Invalid state transition attempted: ${newStateCode}`
+        );
+        return;
       }
-    } catch (error) {
-      console.error("[Directions] Error opening Bing Maps:", error);
-      alert("Error opening Bing Maps. Check console for details.");
+
+      console.log(
+        `[Status Update] Updating appointment ${appointmentId} to state ${newStateCode}`
+      );
+
+      setUpdatingAppointments((prev) => new Set(prev).add(appointmentId));
+      setShowCloseDialog(false);
+
+      try {
+        const updateData: Record<string, number> = {
+          statecode: newStateCode,
+        };
+
+        await context.webAPI.updateRecord(
+          "appointment",
+          appointmentId,
+          updateData
+        );
+
+        console.log(
+          `[Status Update] ✓ Appointment ${appointmentId} closed successfully`
+        );
+
+        popupRef.current?.close();
+
+        setTimeout(() => {
+          onRefresh();
+        }, 500);
+      } catch (error) {
+        console.error(
+          `[Status Update] ✗ Failed to close appointment ${appointmentId}:`,
+          error
+        );
+        alert("Failed to close appointment. Please try again.");
+      } finally {
+        setUpdatingAppointments((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(appointmentId);
+          return newSet;
+        });
+        setSelectedAppointment(null);
+      }
+    },
+    [context, onRefresh]
+  );
+
+  const handleCloseAppointment = React.useCallback(
+    (appointment: AppointmentRecord) => {
+      setSelectedAppointment(appointment);
+      setSelectedStatus(AppointmentStatus.Completed);
+      setShowCloseDialog(true);
+    },
+    []
+  );
+
+  const handleCloseDialogConfirm = React.useCallback(() => {
+    if (selectedAppointment) {
+      void updateAppointmentStatus(selectedAppointment.id, selectedStatus);
     }
+  }, [selectedAppointment, selectedStatus, updateAppointmentStatus]);
+
+  const handleCloseDialogCancel = React.useCallback(() => {
+    setShowCloseDialog(false);
+    setSelectedAppointment(null);
+    setSelectedStatus(AppointmentStatus.Completed);
   }, []);
+
+  const openBingMapDirections = React.useCallback(
+    (destinationAddress: string, appointmentSubject: string) => {
+      console.log("[Directions] Function called");
+      console.log("[Directions] Address:", destinationAddress);
+      console.log("[Directions] Subject:", appointmentSubject);
+
+      if (!destinationAddress || destinationAddress.trim() === "") {
+        console.warn("[Directions] No destination address available");
+        alert("No address available");
+        return;
+      }
+
+      try {
+        const encodedAddress = encodeURIComponent(destinationAddress.trim());
+        const bingMapsUrl = `https://www.bing.com/maps?q=${encodedAddress}`;
+
+        console.log(
+          "[Directions] Opening Bing Maps with location:",
+          bingMapsUrl
+        );
+
+        const newWindow = window.open(bingMapsUrl, "_blank");
+
+        if (newWindow === null) {
+          console.error("[Directions] Pop-up was blocked by browser");
+          alert("Pop-up blocked! Please allow pop-ups for this site.");
+        } else {
+          console.log(
+            "[Directions] ✓ Bing Maps opened showing:",
+            appointmentSubject
+          );
+        }
+      } catch (error) {
+        console.error("[Directions] Error opening Bing Maps:", error);
+        alert("Error opening Bing Maps. Check console for details.");
+      }
+    },
+    []
+  );
 
   React.useEffect(() => {
     if (!mapRef.current) {
@@ -183,33 +288,62 @@ const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, [appointments, showRoute, userLocation, isLoading]);
 
-  // Setup event delegation for directions buttons in popup
+  // Setup event delegation for buttons in popup
   React.useEffect(() => {
     const handlePopupClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (target.classList.contains('appointment-popup-directions-btn')) {
+
+      // Handle directions button
+      if (target.classList.contains("appointment-popup-directions-btn")) {
         e.preventDefault();
         e.stopPropagation();
-        
-        const address = target.getAttribute('data-address');
-        const subject = target.getAttribute('data-subject');
-        
+
+        const address = target.getAttribute("data-address");
+        const subject = target.getAttribute("data-subject");
+
         console.log("[Button Click] Address:", address, "Subject:", subject);
-        
+
         if (address && subject) {
           openBingMapDirections(address, subject);
         } else {
-          console.error('[Button Click] Missing address or subject');
+          console.error("[Button Click] Missing address or subject");
+        }
+      }
+
+      // Handle close appointment button
+      if (target.classList.contains("appointment-popup-close-btn")) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const appointmentId = target.getAttribute("data-appointment-id");
+        const appointmentSubject = target.getAttribute(
+          "data-appointment-subject"
+        );
+
+        console.log("[Close Button Click] Appointment ID:", appointmentId);
+
+        if (appointmentId) {
+          // Find the appointment in the current appointments list
+          const appointment = appointments.find((a) => a.id === appointmentId);
+          if (appointment) {
+            handleCloseAppointment(appointment);
+          } else {
+            console.error(
+              "[Close Button Click] Appointment not found in current list"
+            );
+          }
+        } else {
+          console.error("[Close Button Click] Missing appointment ID");
         }
       }
     };
 
-    document.addEventListener('click', handlePopupClick, true);
-    
+    document.addEventListener("click", handlePopupClick, true);
+
     return () => {
-      document.removeEventListener('click', handlePopupClick, true);
+      document.removeEventListener("click", handlePopupClick, true);
     };
-  }, [openBingMapDirections]);
+  }, [openBingMapDirections, handleCloseAppointment, appointments]);
 
   const cleanup = () => {
     abortControllerRef.current?.abort();
@@ -546,16 +680,22 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const formatSelectedDateRange = (): string => {
     if (currentFilter.customDateRange) {
-      const start = currentFilter.customDateRange.startDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
-      const end = currentFilter.customDateRange.endDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+      const start = currentFilter.customDateRange.startDate.toLocaleDateString(
+        "en-US",
+        {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      );
+      const end = currentFilter.customDateRange.endDate.toLocaleDateString(
+        "en-US",
+        {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      );
       return `${start} - ${end}`;
     }
     return "";
@@ -585,7 +725,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     `;
   };
 
-  const createPopupContent = (appts: AppointmentRecord[], address: string): string => {
+  const createPopupContent = (
+    appts: AppointmentRecord[],
+    address: string
+  ): string => {
     if (appts.length === 0) return "<div>No appointment data</div>";
     const isSingleAppointment = appts.length === 1;
 
@@ -608,6 +751,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               const description =
                 appt.description || "No description available";
               const regarding = appt.regardingobjectidname || "";
+              const isUpdating = updatingAppointments.has(appt.id);
 
               return `
                 <div class="appointment-popup-item ${
@@ -648,9 +792,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
                         )}</div>`
                       : ""
                   }
-                  <button class="appointment-popup-directions-btn" data-address="${escapeHtml(address)}" data-subject="${escapeHtml(appt.subject)}">
-                     Get Directions
-                  </button>
+                  <div class="appointment-popup-actions">
+                    <button 
+                      class="appointment-popup-directions-btn" 
+                      data-address="${escapeHtml(address)}" 
+                      data-subject="${escapeHtml(appt.subject)}"
+                      ${isUpdating ? "disabled" : ""}
+                    >
+                      Get Directions
+                    </button>
+                    <button 
+                      class="appointment-popup-close-btn" 
+                      data-appointment-id="${escapeHtml(appt.id)}" 
+                      data-appointment-subject="${escapeHtml(appt.subject)}"
+                      ${isUpdating ? "disabled" : ""}
+                    >
+                      ${isUpdating ? "⏳ Updating..." : "✕ Close Meeting"}
+                    </button>
+                  </div>
                 </div>
               `;
             })
@@ -844,7 +1003,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
 
       map.markers.add(marker);
-      markersRef.current.push({ marker, appointment: appts[0], position, address });
+      markersRef.current.push({
+        marker,
+        appointment: appts[0],
+        position,
+        address,
+      });
 
       routePoints.push({
         position,
@@ -951,7 +1115,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const handleDueFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = e.target.value as DueFilter;
-    
+
     if (newValue === "customDateRange") {
       setShowDatePicker(true);
     } else {
@@ -960,16 +1124,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   const handleDateRangeSelect = (range: DateRange) => {
-    onFilterChange({ 
-      dueFilter: "customDateRange", 
-      customDateRange: range 
+    onFilterChange({
+      dueFilter: "customDateRange",
+      customDateRange: range,
     });
   };
 
   const handleDatePickerClose = () => {
     setShowDatePicker(false);
-    
-    if (currentFilter.dueFilter === "customDateRange" && !currentFilter.customDateRange) {
+
+    if (
+      currentFilter.dueFilter === "customDateRange" &&
+      !currentFilter.customDateRange
+    ) {
       onFilterChange({ dueFilter: "today", customDateRange: undefined });
     }
   };
@@ -991,7 +1158,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             <div className="user-info-label">Showing appointments for</div>
             <div className="user-info-name">👤 {currentUserName}</div>
           </div>
-          
+
           <div className="filter-section">
             <label className="filter-label">Due</label>
             <select
@@ -1010,20 +1177,26 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <option value="customDateRange">Custom Date Range</option>
               <option value="all">All</option>
             </select>
-            
-            {currentFilter.dueFilter === "customDateRange" && currentFilter.customDateRange && (
-              <div className="selected-date-badge">
-                📅 {formatSelectedDateRange()}
-                <button
-                  className="clear-date-btn"
-                  onClick={() => onFilterChange({ dueFilter: "today", customDateRange: undefined })}
-                  title="Clear date range"
-                  aria-label="Clear date range"
-                >
-                  ✕
-                </button>
-              </div>
-            )}
+
+            {currentFilter.dueFilter === "customDateRange" &&
+              currentFilter.customDateRange && (
+                <div className="selected-date-badge">
+                  📅 {formatSelectedDateRange()}
+                  <button
+                    className="clear-date-btn"
+                    onClick={() =>
+                      onFilterChange({
+                        dueFilter: "today",
+                        customDateRange: undefined,
+                      })
+                    }
+                    title="Clear date range"
+                    aria-label="Clear date range"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
           </div>
 
           <div className="route-toggle-section">
@@ -1079,7 +1252,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
               <p className="no-appointments-message">
                 {allAppointmentsCount === 0
                   ? "No appointments available."
-                  : currentFilter.dueFilter === "customDateRange" && currentFilter.customDateRange
+                  : currentFilter.dueFilter === "customDateRange" &&
+                    currentFilter.customDateRange
                   ? `No appointments found for ${formatSelectedDateRange()}.`
                   : "No appointments match the current filter criteria."}
               </p>
@@ -1108,6 +1282,68 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onDateRangeSelect={handleDateRangeSelect}
           onClose={handleDatePickerClose}
         />
+      )}
+
+      {showCloseDialog && selectedAppointment && (
+        <div className="close-dialog-overlay" onClick={handleCloseDialogCancel}>
+          <div
+            className="close-dialog-container"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="close-dialog-header">
+              <h3 className="close-dialog-title">Close Meeting</h3>
+              <button
+                className="close-dialog-close-btn"
+                onClick={handleCloseDialogCancel}
+                aria-label="Close dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="close-dialog-content">
+              <p className="close-dialog-question">
+                Do you want to close the selected 1 Meeting?
+              </p>
+              <p className="close-dialog-instruction">
+                Select the status of the closing Meeting.
+              </p>
+
+              <div className="close-dialog-field">
+                <label className="close-dialog-label">State</label>
+                <select
+                  className="close-dialog-select"
+                  value={selectedStatus}
+                  onChange={(e) =>
+                    setSelectedStatus(parseInt(e.target.value, 10))
+                  }
+                >
+                  <option value={AppointmentStatus.Completed}>Completed</option>
+                  <option value={AppointmentStatus.Canceled}>Canceled</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="close-dialog-footer">
+              <button
+                className="close-dialog-btn close-dialog-confirm-btn"
+                onClick={handleCloseDialogConfirm}
+                disabled={updatingAppointments.has(selectedAppointment.id)}
+              >
+                {updatingAppointments.has(selectedAppointment.id)
+                  ? "Updating..."
+                  : "Close Meeting"}
+              </button>
+              <button
+                className="close-dialog-btn close-dialog-cancel-btn"
+                onClick={handleCloseDialogCancel}
+                disabled={updatingAppointments.has(selectedAppointment.id)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

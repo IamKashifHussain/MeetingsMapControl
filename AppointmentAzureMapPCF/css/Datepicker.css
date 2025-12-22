@@ -1,3 +1,7 @@
+/* ====================================================================
+   COMPACT DATE PICKER - WITH PROPER RIGHT PANEL HEIGHT
+   ==================================================================== */
+
 /* Date Picker Overlay */
 .date-picker-overlay {
   position: fixed;
@@ -14,24 +18,25 @@
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-/* Date Picker Container - Dual Pane Layout */
+/* ====================================================================
+   CONTAINER - COMPACT WITH PROPER HEIGHT
+   ==================================================================== */
 .date-picker-container {
   background: white;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   display: flex;
-  overflow: hidden;
+  overflow: visible !important; /* FIXED: Allow content to show */
   animation: slideUp 0.3s ease-out;
+  width: 450px !important;
   max-width: 95vw;
+  min-height: 380px !important; /* FIXED: Ensure minimum height */
   max-height: 90vh;
+  flex-shrink: 0;
 }
 
 @keyframes slideUp {
@@ -45,57 +50,82 @@
   }
 }
 
-/* Left Panel - Month Calendar */
+/* ====================================================================
+   LEFT PANEL - CALENDAR (270px)
+   ==================================================================== */
 .date-picker-left {
-  width: 320px;
-  padding: 20px;
+  width: 270px !important;
+  min-width: 270px !important;
+  max-width: 270px !important;
+  padding: 15px !important;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #e5e5e5;
+  flex-shrink: 0;
+  overflow: visible !important; /* FIXED */
 }
 
-/* Right Panel - Year Overview & Range Summary */
+/* ====================================================================
+   RIGHT PANEL - SUMMARY (180px) - FIXED HEIGHT ISSUE
+   ==================================================================== */
 .date-picker-right {
-  width: 240px;
-  padding: 20px;
+  width: 180px !important;
+  min-width: 180px !important;
+  max-width: 180px !important;
+  padding: 15px !important;
   display: flex;
   flex-direction: column;
   background-color: #fafafa;
+  flex-shrink: 0;
+  overflow-y: auto !important; /* FIXED: Allow scrolling if needed */
+  overflow-x: hidden !important;
+  max-height: none !important; /* FIXED: Remove height restriction */
 }
 
-/* Header */
+/* ====================================================================
+   HEADER
+   ==================================================================== */
 .date-picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 12px !important;
+  height: 24px !important;
+  flex-shrink: 0;
 }
 
 .date-picker-month-title {
-  font-size: 18px;
+  font-size: 14px !important;
   font-weight: 600;
   color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .date-picker-nav-buttons {
   display: flex;
-  gap: 4px;
+  gap: 3px;
+  flex-shrink: 0;
 }
 
 .date-picker-nav-btn {
   background: white;
   border: 1px solid #e0e0e0;
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  font-size: 14px;
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  border-radius: 3px;
+  font-size: 11px !important;
   color: #666;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 0 !important;
+  flex-shrink: 0;
 }
 
 .date-picker-nav-btn:hover {
@@ -108,36 +138,48 @@
   transform: scale(0.95);
 }
 
-/* Weekdays */
+/* ====================================================================
+   WEEKDAYS
+   ==================================================================== */
 .date-picker-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 2px !important;
+  margin-bottom: 5px !important;
+  height: 22px !important;
+  flex-shrink: 0;
 }
 
 .date-picker-weekday {
   text-align: center;
-  font-size: 12px;
+  font-size: 9px !important;
   font-weight: 600;
   color: #999;
-  padding: 8px 0;
+  padding: 3px 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Days Grid */
+/* ====================================================================
+   DAYS GRID - COMPACT & STABLE (180px with 6 rows)
+   ==================================================================== */
 .date-picker-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  flex: 1;
+  gap: 2px !important;
+  height: 180px !important;
+  min-height: 180px !important;
+  max-height: 180px !important;
+  grid-template-rows: repeat(6, 1fr) !important;
+  flex-shrink: 0;
 }
 
 .date-picker-day {
-  aspect-ratio: 1;
   border: none;
   background: transparent;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 3px;
+  font-size: 12px !important;
   color: #333;
   cursor: pointer;
   transition: all 0.15s;
@@ -146,6 +188,9 @@
   justify-content: center;
   font-weight: 400;
   position: relative;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .date-picker-day:hover:not(.date-picker-day-empty):not(:disabled) {
@@ -159,6 +204,7 @@
 .date-picker-day-empty {
   cursor: default;
   opacity: 0;
+  pointer-events: none;
 }
 
 .date-picker-day-outside {
@@ -172,18 +218,17 @@
   border: 1px solid #4f9fff;
 }
 
-/* Date Range Styling */
 .date-picker-day-start {
   background-color: #4f9fff !important;
   color: white !important;
-  border-radius: 4px 0 0 4px;
+  border-radius: 3px 0 0 3px;
   font-weight: 600;
 }
 
 .date-picker-day-end {
   background-color: #4f9fff !important;
   color: white !important;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 3px 3px 0;
   font-weight: 600;
 }
 
@@ -196,25 +241,30 @@
   background-color: rgba(79, 159, 255, 0.25);
 }
 
-/* Footer */
+/* ====================================================================
+   FOOTER
+   ==================================================================== */
 .date-picker-footer {
-  margin-top: 16px;
-  padding-top: 16px;
+  margin-top: 10px !important;
+  padding-top: 10px !important;
   border-top: 1px solid #e5e5e5;
   display: flex;
   justify-content: flex-end;
+  min-height: 28px !important; /* FIXED: min-height instead of fixed */
+  flex-shrink: 0;
 }
 
 .date-picker-today-btn {
-  padding: 8px 16px;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 5px 10px !important;
+  border-radius: 3px;
+  font-size: 11px !important;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   border: none;
   background-color: transparent;
   color: #4f9fff;
+  white-space: nowrap;
 }
 
 .date-picker-today-btn:hover {
@@ -226,86 +276,104 @@
   transform: scale(0.98);
 }
 
-/* Year Panel Header */
+/* ====================================================================
+   RIGHT PANEL CONTENT - FIXED TO SHOW ALL
+   ==================================================================== */
 .date-picker-year-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
-  gap: 8px;
+  margin-bottom: 10px !important;
+  gap: 5px;
+  min-height: 18px !important; /* FIXED */
+  flex-shrink: 0;
 }
 
 .date-picker-year-title {
-  font-size: 16px;
+  font-size: 13px !important;
   font-weight: 600;
   color: #333;
   flex: 1;
   text-align: center;
+  white-space: nowrap;
 }
 
-/* Range Summary Section */
 .date-picker-range-summary {
   background-color: #f5f5f5;
-  border-radius: 8px;
-  padding: 14px;
-  margin-bottom: 14px;
+  border-radius: 5px;
+  padding: 8px !important;
+  margin-bottom: 8px !important;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px !important;
   border: 1px solid #e0e0e0;
+  flex-shrink: 0; /* FIXED: Don't compress */
 }
 
 .date-picker-range-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .date-picker-range-label {
-  font-size: 11px;
+  font-size: 8px !important;
   font-weight: 700;
   color: #666;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
 }
 
 .date-picker-range-value {
-  font-size: 13px;
+  font-size: 10px !important;
   font-weight: 600;
   color: #333;
   word-break: break-word;
+  line-height: 1.3;
+  min-height: 13px;
 }
 
 .date-picker-range-info {
   text-align: center;
-  padding: 10px;
+  padding: 6px !important;
   background-color: #e8f4f8;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 5px;
+  font-size: 9px !important;
   color: #357abd;
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 7px !important;
   border: 1px solid #4f9fff;
+  min-height: 28px !important; /* FIXED */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-/* Button Group */
 .date-picker-button-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px !important;
+  margin-bottom: 7px !important;
+  flex-shrink: 0; /* FIXED: Don't compress buttons */
 }
 
 .date-picker-apply-btn,
 .date-picker-clear-btn {
-  padding: 10px 12px;
+  padding: 7px 8px !important;
   border: none;
-  border-radius: 4px;
-  font-size: 13px;
+  border-radius: 3px;
+  font-size: 10px !important;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
+  min-height: 28px !important; /* FIXED: min-height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .date-picker-apply-btn {
@@ -315,7 +383,7 @@
 
 .date-picker-apply-btn:hover:not(:disabled) {
   background-color: #357abd;
-  box-shadow: 0 2px 8px rgba(79, 159, 255, 0.3);
+  box-shadow: 0 2px 6px rgba(79, 159, 255, 0.3);
 }
 
 .date-picker-apply-btn:disabled {
@@ -350,27 +418,60 @@
   transform: scale(0.98);
 }
 
-/* Months Grid */
+.date-picker-close-btn {
+  padding: 3px !important;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 14px !important;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s;
+  align-self: flex-end;
+  margin-top: auto;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.date-picker-close-btn:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.date-picker-close-btn:active {
+  transform: scale(0.95);
+}
+
+/* ====================================================================
+   MONTHS GRID
+   ==================================================================== */
 .date-picker-months-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 5px;
   flex: 1;
   align-content: start;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .date-picker-month-btn {
-  padding: 12px 8px;
+  padding: 7px 3px !important;
   border: none;
   background: white;
-  border-radius: 4px;
-  font-size: 13px;
+  border-radius: 3px;
+  font-size: 10px !important;
   color: #666;
   cursor: pointer;
   transition: all 0.2s;
   font-weight: 500;
   border: 1px solid #e0e0e0;
+  white-space: nowrap;
 }
 
 .date-picker-month-btn:hover {
@@ -401,75 +502,41 @@
   border-color: #357abd;
 }
 
-/* Close Button */
-.date-picker-close-btn {
-  padding: 8px;
-  border: none;
-  background: transparent;
-  color: #999;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 4px;
-  transition: all 0.2s;
-  align-self: flex-end;
-}
-
-.date-picker-close-btn:hover {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-.date-picker-close-btn:active {
-  transform: scale(0.95);
-}
-
-/* Responsive Design */
-@media (max-width: 680px) {
+/* ====================================================================
+   RESPONSIVE
+   ==================================================================== */
+@media (max-width: 600px) {
   .date-picker-container {
     flex-direction: column;
-    width: 90vw;
+    width: 90vw !important;
+    max-width: 320px !important;
+    min-height: 520px !important; /* FIXED: More height for mobile stacked layout */
   }
 
   .date-picker-left {
-    width: 100%;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
     border-right: none;
     border-bottom: 1px solid #e5e5e5;
   }
 
   .date-picker-right {
-    width: 100%;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
   }
 
-  .date-picker-months-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .date-picker-range-summary {
-    padding: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .date-picker-left {
-    width: 100%;
-    padding: 16px;
-  }
-
-  .date-picker-right {
-    width: 100%;
-    padding: 16px;
-  }
-
-  .date-picker-month-title {
-    font-size: 16px;
-  }
-
-  .date-picker-container {
-    max-height: 95vh;
+  .date-picker-days {
+    height: 160px !important;
+    min-height: 160px !important;
+    max-height: 160px !important;
   }
 }
 
-/* Smooth transitions */
+/* ====================================================================
+   UTILITY
+   ==================================================================== */
 * {
   -webkit-tap-highlight-color: transparent;
 }
@@ -477,4 +544,22 @@
 button {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* CRITICAL FIX: Ensure scrollbar appears if content overflows */
+.date-picker-right::-webkit-scrollbar {
+  width: 4px;
+}
+
+.date-picker-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.date-picker-right::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 2px;
+}
+
+.date-picker-right::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
 }

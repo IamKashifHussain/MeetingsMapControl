@@ -64,6 +64,8 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-sizing: border-box;
   min-width: 100%;
+  /* FIXED: Set consistent height */
+  min-height: 72px;
 }
 
 .filter-controls-bar:hover {
@@ -133,6 +135,8 @@
 .filter-due-section {
   flex: 0 0 auto;
   min-width: clamp(130px, 22vw, 200px);
+  /* FIXED: Prevent expansion */
+  position: relative;
 }
 
 .filter-label {
@@ -952,6 +956,399 @@
   }
 }
 
+/* Get Directions Button - Clean Minimal Design */
+.appointment-popup-directions-btn {
+  width: 100%;
+  padding: clamp(10px, 2vw, 12px) clamp(14px, 2.5vw, 18px);
+  margin-top: clamp(10px, 2vw, 14px);
+  font-size: clamp(12px, 2vw, 14px);
+  font-weight: 400;
+  background: #ffffff;
+  color: #323130;
+  border: 1px solid #d1d1d1;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(8px, 1.5vw, 10px);
+  white-space: nowrap;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  text-align: left;
+  box-shadow: none;
+}
+
+.appointment-popup-directions-btn:hover:not(:disabled) {
+  background: #f3f2f1;
+  border-color: #c8c6c4;
+  box-shadow: none;
+  transform: none;
+}
+
+.appointment-popup-directions-btn:active:not(:disabled) {
+  background: #edebe9;
+  border-color: #a19f9d;
+}
+
+.appointment-popup-directions-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #ffffff;
+  border-color: #d1d1d1;
+}
+
+.appointment-popup-directions-btn:focus-visible {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+  border-color: #0078d4;
+}
+
+/* Direction Icon Styling */
+.appointment-popup-directions-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: clamp(14px, 2.2vw, 16px);
+  color: #323130;
+  width: 16px;
+  height: 16px;
+}
+
+/* SVG icon for the directions arrow */
+.appointment-popup-directions-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Text label styling */
+.appointment-popup-directions-text {
+  flex: 1;
+  color: #323130;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: 1.2;
+}
+
+/* Separator between appointments */
+.appointment-popup-item-separator {
+  border-top: 1px solid #e9ecef;
+  padding-top: clamp(8px, 1.5vw, 12px);
+  margin-top: clamp(8px, 1.5vw, 12px);
+}
+
+/* Popup Actions Container */
+.appointment-popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/* Close Meeting Button */
+.appointment-popup-close-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: white;
+  color: #323130;
+  border: 1px solid #8a8886;
+  border-radius: 2px;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.appointment-popup-close-btn:hover:not(:disabled) {
+  background: #f3f2f1;
+  border-color: #323130;
+}
+
+.appointment-popup-close-btn:active:not(:disabled) {
+  background: #edebe9;
+}
+
+.appointment-popup-close-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f3f2f1;
+}
+
+/* Close Dialog Overlay */
+.close-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease;
+}
+
+/* Close Dialog Container */
+.close-dialog-container {
+  background: white;
+  border-radius: 2px;
+  box-shadow: 0 6.4px 14.4px rgba(0, 0, 0, 0.132), 0 1.2px 3.6px rgba(0, 0, 0, 0.108);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+/* Close Dialog Header */
+.close-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #edebe9;
+}
+
+.close-dialog-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #323130;
+  margin: 0;
+}
+
+.close-dialog-close-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #605e5c;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  border-radius: 2px;
+  transition: all 0.1s ease;
+}
+
+.close-dialog-close-btn:hover {
+  background: #f3f2f1;
+  color: #323130;
+}
+
+/* Close Dialog Content */
+.close-dialog-content {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.close-dialog-question {
+  font-size: 14px;
+  color: #323130;
+  margin: 0 0 12px 0;
+  font-weight: 400;
+}
+
+.close-dialog-instruction {
+  font-size: 14px;
+  color: #605e5c;
+  margin: 0 0 20px 0;
+}
+
+.close-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.close-dialog-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #323130;
+}
+
+.close-dialog-select {
+  padding: 8px 12px;
+  border: 1px solid #8a8886;
+  border-radius: 2px;
+  font-size: 14px;
+  color: #323130;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.1s ease;
+}
+
+.close-dialog-select:hover {
+  border-color: #323130;
+}
+
+.close-dialog-select:focus {
+  border-color: #0078d4;
+  box-shadow: 0 0 0 1px #0078d4;
+}
+
+/* Close Dialog Footer */
+.close-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid #edebe9;
+}
+
+.close-dialog-btn {
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  border: 1px solid transparent;
+  min-width: 80px;
+}
+
+.close-dialog-confirm-btn {
+  background: #0078d4;
+  color: white;
+  border-color: #0078d4;
+}
+
+.close-dialog-confirm-btn:hover:not(:disabled) {
+  background: #106ebe;
+  border-color: #106ebe;
+}
+
+.close-dialog-confirm-btn:active:not(:disabled) {
+  background: #005a9e;
+  border-color: #005a9e;
+}
+
+.close-dialog-confirm-btn:disabled {
+  background: #f3f2f1;
+  color: #a19f9d;
+  border-color: #f3f2f1;
+  cursor: not-allowed;
+}
+
+.close-dialog-cancel-btn {
+  background: white;
+  color: #323130;
+  border-color: #8a8886;
+}
+
+.close-dialog-cancel-btn:hover:not(:disabled) {
+  background: #f3f2f1;
+  border-color: #323130;
+}
+
+.close-dialog-cancel-btn:active:not(:disabled) {
+  background: #edebe9;
+}
+
+.close-dialog-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Loading state animation */
+.close-dialog-btn:disabled {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* ========================================
+   FIXED: Custom Date Range Badge (Inline Display)
+   ======================================== */
+
+/* FIXED: Selected Date Badge - Positioned absolutely to avoid expansion */
+.selected-date-badge {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #e6f4ff;
+  border: 1px solid #4facfe;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: #0078d4;
+  font-weight: 500;
+  animation: slideInDown 0.3s ease-out;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(79, 172, 254, 0.2);
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.clear-date-btn {
+  background: transparent;
+  border: none;
+  color: #0078d4;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+  line-height: 1;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.clear-date-btn:hover {
+  background-color: rgba(79, 172, 254, 0.2);
+  color: #d13438;
+  transform: scale(1.1);
+}
+
+.clear-date-btn:active {
+  transform: scale(0.95);
+}
+
+/* FIXED: Ensure filter section wrapper can show the badge */
+.filter-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
 @media (min-width: 1280px) and (max-width: 1365px) {
   .filter-controls-bar {
     gap: 12px;
@@ -1087,6 +1484,7 @@
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
+    min-height: auto;
   }
 
   .user-info-section {
@@ -1117,11 +1515,17 @@
   .appointment-popup-container {
     max-width: 95vw;
   }
+  
+  .selected-date-badge {
+    position: static;
+    margin-top: 8px;
+  }
 }
 
 @media (min-width: 480px) and (max-width: 767px) {
   .filter-controls-bar {
     gap: 10px;
+    min-height: auto;
   }
 
   .filter-section {
@@ -1280,90 +1684,6 @@
   }
 }
 
-/* Get Directions Button - Clean Minimal Design */
-.appointment-popup-directions-btn {
-  width: 100%;
-  padding: clamp(10px, 2vw, 12px) clamp(14px, 2.5vw, 18px);
-  margin-top: clamp(10px, 2vw, 14px);
-  font-size: clamp(12px, 2vw, 14px);
-  font-weight: 400;
-  background: #ffffff;
-  color: #323130;
-  border: 1px solid #d1d1d1;
-  border-radius: 2px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: clamp(8px, 1.5vw, 10px);
-  white-space: nowrap;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
-  text-align: left;
-  box-shadow: none;
-}
-
-.appointment-popup-directions-btn:hover:not(:disabled) {
-  background: #f3f2f1;
-  border-color: #c8c6c4;
-  box-shadow: none;
-  transform: none;
-}
-
-.appointment-popup-directions-btn:active:not(:disabled) {
-  background: #edebe9;
-  border-color: #a19f9d;
-}
-
-.appointment-popup-directions-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  background: #ffffff;
-  border-color: #d1d1d1;
-}
-
-.appointment-popup-directions-btn:focus-visible {
-  outline: 2px solid #0078d4;
-  outline-offset: 2px;
-  border-color: #0078d4;
-}
-
-/* Direction Icon Styling */
-.appointment-popup-directions-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: clamp(14px, 2.2vw, 16px);
-  color: #323130;
-  width: 16px;
-  height: 16px;
-}
-
-/* SVG icon for the directions arrow */
-.appointment-popup-directions-icon svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-}
-
-/* Text label styling */
-.appointment-popup-directions-text {
-  flex: 1;
-  color: #323130;
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: 1.2;
-}
-
-/* Separator between appointments */
-.appointment-popup-item-separator {
-  border-top: 1px solid #e9ecef;
-  padding-top: clamp(8px, 1.5vw, 12px);
-  margin-top: clamp(8px, 1.5vw, 12px);
-}
-
 /* Mobile responsiveness for button */
 @media (max-width: 479px) {
   .appointment-popup-directions-btn {
@@ -1426,67 +1746,31 @@
   }
 }
 
-/* Additional CSS for Calendar Integration - Add to MapComponent.css */
-
-/* Selected Date Badge */
-.selected-date-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background-color: #e6f4ff;
-  border: 1px solid #4facfe;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #0078d4;
-  margin-left: 8px;
-  font-weight: 500;
-  animation: slideInRight 0.3s ease-out;
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
+/* Mobile responsive adjustments for dialog */
+@media (max-width: 640px) {
+  .close-dialog-container {
+    width: 95%;
+    max-height: 95vh;
   }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+
+  .close-dialog-header {
+    padding: 12px 16px;
   }
-}
 
-.clear-date-btn {
-  background: transparent;
-  border: none;
-  color: #0078d4;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 0;
-  margin-left: 4px;
-  line-height: 1;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-}
+  .close-dialog-title {
+    font-size: 18px;
+  }
 
-.clear-date-btn:hover {
-  background-color: rgba(79, 172, 254, 0.2);
-  color: #d13438;
-  transform: scale(1.1);
-}
+  .close-dialog-content {
+    padding: 16px;
+  }
 
-.clear-date-btn:active {
-  transform: scale(0.95);
-}
+  .close-dialog-footer {
+    padding: 12px 16px;
+    flex-direction: column-reverse;
+  }
 
-/* Update filter-section to wrap properly */
-.filter-section {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  .close-dialog-btn {
+    width: 100%;
+  }
 }
