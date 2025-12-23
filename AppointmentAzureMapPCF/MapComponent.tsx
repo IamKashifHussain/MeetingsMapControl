@@ -1132,13 +1132,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const handleDatePickerClose = () => {
     setShowDatePicker(false);
-
-    if (
-      currentFilter.dueFilter === "customDateRange" &&
-      !currentFilter.customDateRange
-    ) {
-      onFilterChange({ dueFilter: "today", customDateRange: undefined });
-    }
   };
 
   const handleRefreshClick = () => {

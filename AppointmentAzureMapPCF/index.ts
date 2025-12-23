@@ -35,7 +35,7 @@ export class AppointmentAzureMapPCF
   private currentUserName = "";
 
   private showRoute = false;
-  private refreshTrigger = 0; // Add trigger to force re-render
+  private refreshTrigger = 0;
 
   public init(
     context: ComponentFramework.Context<IInputs>,
@@ -234,9 +234,10 @@ export class AppointmentAzureMapPCF
       this.isLoadingAppointments = false;
     }
   }
-
+  
   private applyFilters(): void {
     const now = new Date();
+    // Get today at midnight in local timezone
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -296,36 +297,33 @@ export class AppointmentAzureMapPCF
         break;
       }
       case "customDateRange": {
-        // Filter appointments within the custom date range
         if (this.currentFilter.customDateRange) {
           const { startDate, endDate } = this.currentFilter.customDateRange;
 
-          // Get UTC date components for start date
-          const startUtcYear = startDate.getUTCFullYear();
-          const startUtcMonth = startDate.getUTCMonth();
-          const startUtcDate = startDate.getUTCDate();
+          // Extract the date components from the UTC dates provided by DatePicker
+          const startYear = startDate.getUTCFullYear();
+          const startMonth = startDate.getUTCMonth();
+          const startDay = startDate.getUTCDate();
+          
+          const endYear = endDate.getUTCFullYear();
+          const endMonth = endDate.getUTCMonth();
+          const endDay = endDate.getUTCDate();
+          
+          // Create date range in LOCAL timezone
+          // These dates represent the selected calendar dates in the user's timezone
+          const rangeStart = new Date(startYear, startMonth, startDay, 0, 0, 0, 0);
+          const rangeEnd = new Date(endYear, endMonth, endDay, 23, 59, 59, 999);
 
-          // Get UTC date components for end date
-          const endUtcYear = endDate.getUTCFullYear();
-          const endUtcMonth = endDate.getUTCMonth();
-          const endUtcDate = endDate.getUTCDate();
+          console.log(`[Filter] Custom range: ${rangeStart.toLocaleString()} to ${rangeEnd.toLocaleString()}`);
 
-          // Create start of day (00:00:00) in UTC for start date
-          const rangeStartOfDay = new Date(
-            Date.UTC(startUtcYear, startUtcMonth, startUtcDate, 0, 0, 0, 0)
-          );
-
-          // Create end of day (23:59:59) in UTC for end date
-          const rangeEndOfDay = new Date(
-            Date.UTC(endUtcYear, endUtcMonth, endUtcDate, 23, 59, 59, 999)
-          );
-
+          // Filter appointments: JavaScript automatically handles the timezone comparison
+          // because both rangeStart/rangeEnd and appt.scheduledstart are Date objects
+          // that internally store UTC but are created in local timezone context
           filtered = filtered.filter((appt) => {
-            return (
-              appt.scheduledstart >= rangeStartOfDay &&
-              appt.scheduledstart <= rangeEndOfDay
-            );
+            return appt.scheduledstart >= rangeStart && appt.scheduledstart <= rangeEnd;
           });
+
+          console.log(`[Filter] Found ${filtered.length} of ${this.allAppointments.length} appointments`);
         }
         break;
       }
