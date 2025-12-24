@@ -1,7 +1,7 @@
 import * as React from "react";
 import * as atlas from "azure-maps-control";
 import "azure-maps-control/dist/atlas.min.css";
-import "./MapComponent.css";
+import "./css/AppointmentAzureMapPCF.css";
 import { IInputs } from "./generated/ManifestTypes";
 import {
   AppointmentRecord,
@@ -1174,7 +1174,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
             {currentFilter.dueFilter === "customDateRange" &&
               currentFilter.customDateRange && (
                 <div className="selected-date-badge">
-                  📅 {formatSelectedDateRange()}
+                  {formatSelectedDateRange()}
                   <button
                     className="clear-date-btn"
                     onClick={() =>

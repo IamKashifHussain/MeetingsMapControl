@@ -47,11 +47,10 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
     const firstDayOfWeek = firstDay.getUTCDay();
     for (let i = 0; i < firstDayOfWeek; i++) {
-      days.push(new Date(0)); // Empty cell marker
+      days.push(new Date(0));
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
-      // Create dates at midnight UTC
       days.push(new Date(Date.UTC(year, month, day, 0, 0, 0, 0)));
     }
 
@@ -95,15 +94,12 @@ const DatePicker: React.FC<DatePickerProps> = ({
   const handleDateClick = (date: Date) => {
     if (date.getTime() === 0) return;
 
-    // If no start date, set it
     if (!tempStartDate) {
       setTempStartDate(date);
       return;
     }
 
-    // If start date is set but no end date
     if (!tempEndDate) {
-      // If clicked date is before start date, swap them
       if (date < tempStartDate) {
         setTempEndDate(tempStartDate);
         setTempStartDate(date);
@@ -113,7 +109,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
       return;
     }
 
-    // If both dates are set, reset and start new selection
     setTempStartDate(date);
     setTempEndDate(null);
   };
@@ -187,7 +182,6 @@ const DatePicker: React.FC<DatePickerProps> = ({
 
   const formatDateDisplay = (date: Date | null): string => {
     if (!date) return "";
-    // Display the UTC date as-is (don't convert to local timezone)
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",

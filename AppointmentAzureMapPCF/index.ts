@@ -237,7 +237,6 @@ export class AppointmentAzureMapPCF
   
   private applyFilters(): void {
     const now = new Date();
-    // Get today at midnight in local timezone
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -300,7 +299,6 @@ export class AppointmentAzureMapPCF
         if (this.currentFilter.customDateRange) {
           const { startDate, endDate } = this.currentFilter.customDateRange;
 
-          // Extract the date components from the UTC dates provided by DatePicker
           const startYear = startDate.getUTCFullYear();
           const startMonth = startDate.getUTCMonth();
           const startDay = startDate.getUTCDate();
@@ -309,16 +307,11 @@ export class AppointmentAzureMapPCF
           const endMonth = endDate.getUTCMonth();
           const endDay = endDate.getUTCDate();
           
-          // Create date range in LOCAL timezone
-          // These dates represent the selected calendar dates in the user's timezone
           const rangeStart = new Date(startYear, startMonth, startDay, 0, 0, 0, 0);
           const rangeEnd = new Date(endYear, endMonth, endDay, 23, 59, 59, 999);
 
           console.log(`[Filter] Custom range: ${rangeStart.toLocaleString()} to ${rangeEnd.toLocaleString()}`);
 
-          // Filter appointments: JavaScript automatically handles the timezone comparison
-          // because both rangeStart/rangeEnd and appt.scheduledstart are Date objects
-          // that internally store UTC but are created in local timezone context
           filtered = filtered.filter((appt) => {
             return appt.scheduledstart >= rangeStart && appt.scheduledstart <= rangeEnd;
           });

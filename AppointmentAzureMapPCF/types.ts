@@ -1,4 +1,3 @@
-// Shared type definitions for the PCF control
 import { data } from "azure-maps-control";
 
 export interface AppointmentRecord {
