@@ -44,10 +44,14 @@
   background: #f8f9fa;
   z-index: 1000;
   min-height: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
+/* FIXED: Changed align-items from flex-start to center for proper vertical alignment */
 .filter-controls-bar {
   width: 100%;
   background: rgba(255, 255, 255, 0.95);
@@ -65,6 +69,8 @@
   box-sizing: border-box;
   min-width: 100%;
   min-height: 72px;
+  overflow: visible;
+  position: relative;
 }
 
 .filter-controls-bar:hover {
@@ -104,6 +110,9 @@
   flex: 0 0 auto;
   padding: 0;
   min-width: fit-content;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .user-info-label {
@@ -133,8 +142,13 @@
 .filter-section,
 .filter-due-section {
   flex: 0 0 auto;
+  margin : 0;
+  padding: 0;
   min-width: clamp(130px, 22vw, 200px);
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .filter-label {
@@ -783,6 +797,99 @@
   50% { transform: translateY(-10px); }
 }
 
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.85; }
+}
+
+.atlas-popup {
+  z-index: 2000 !important;
+  pointer-events: auto !important;
+}
+
+.atlas-popup-content {
+  pointer-events: auto !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.atlas-popup-tip {
+  pointer-events: none !important;
+}
+
+.appointment-popup-container,
+.user-popup-container {
+  pointer-events: auto !important;
+  cursor: default;
+}
+
+.appointment-popup-container * {
+  pointer-events: auto !important;
+}
+
+.appointment-popup-directions-btn,
+.appointment-popup-close-btn {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+.appointment-popup-directions-btn:disabled,
+.appointment-popup-close-btn:disabled {
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+}
+
+.appointment-popup-container,
+.user-popup-container {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.appointment-popup-subject,
+.appointment-popup-description,
+.appointment-popup-regarding-value,
+.user-popup-address,
+.appointment-popup-detail-text {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+.atlas-map .atlas-popup {
+  z-index: 2000 !important;
+}
+
+.appointment-popup-list {
+  pointer-events: auto !important;
+}
+
+.appointment-popup-item {
+  pointer-events: auto !important;
+}
+
+.appointment-popup-actions {
+  pointer-events: auto !important;
+}
+
+
 .pcf-loading-container {
   width: 100%;
   height: 100%;
@@ -1083,211 +1190,260 @@
   justify-content: center;
   z-index: 10000;
   animation: fadeIn 0.25s ease-out;
+  padding: clamp(12px, 2vw, 20px);
+  box-sizing: border-box;
 }
 
-/* Base container */
 .close-dialog-container {
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: clamp(8px, 1.5vw, 12px);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
   width: min(600px, 92vw);
-  max-height: 80vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
 }
 
-/* Header */
 .close-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: clamp(14px, 2.5vw, 20px);
+  padding: clamp(12px, 2.5vw, 20px);
   border-bottom: 1px solid #edebe9;
+  flex-shrink: 0;
+  min-height: clamp(48px, 8vw, 64px);
+  box-sizing: border-box;
 }
 
 .close-dialog-title {
-  font-size: clamp(18px, 2.4vw, 22px);
+  font-size: clamp(16px, 2.4vw, 22px);
   font-weight: 600;
   color: #323130;
   margin: 0;
+  line-height: 1.3;
+  padding-right: clamp(8px, 1.5vw, 12px);
+  word-wrap: break-word;
+  flex: 1;
 }
 
 .close-dialog-close-btn {
   background: none;
   border: none;
-  font-size: 18px;
+  font-size: clamp(16px, 2.5vw, 18px);
   color: #605e5c;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 6px;
+  padding: clamp(4px, 1vw, 6px);
+  border-radius: clamp(4px, 1vw, 6px);
   transition: background 0.15s ease, color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: clamp(32px, 5vw, 40px);
+  min-height: clamp(32px, 5vw, 40px);
+  box-sizing: border-box;
 }
+
 .close-dialog-close-btn:hover {
   background: #f3f2f1;
   color: #323130;
 }
 
-/* Content */
+.close-dialog-close-btn:active {
+  transform: scale(0.95);
+}
+
 .close-dialog-content {
-  padding: clamp(16px, 3vw, 24px);
+  padding: clamp(14px, 3vw, 24px);
   overflow-y: auto;
+  overflow-x: hidden;
   display: grid;
-  gap: 16px;
+  gap: clamp(12px, 2.5vw, 16px);
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+.close-dialog-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.close-dialog-content::-webkit-scrollbar-track {
+  background: #f3f2f1;
+  border-radius: 3px;
+}
+
+.close-dialog-content::-webkit-scrollbar-thumb {
+  background: #c8c6c4;
+  border-radius: 3px;
+}
+
+.close-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: #a19f9d;
 }
 
 .close-dialog-question {
-  font-size: clamp(15px, 2vw, 18px);
+  font-size: clamp(14px, 2vw, 18px);
   font-weight: 600;
   color: #323130;
   margin: 0;
+  line-height: 1.4;
+  word-wrap: break-word;
 }
 
 .close-dialog-instruction {
-  font-size: clamp(13px, 1.8vw, 15px);
+  font-size: clamp(12px, 1.8vw, 15px);
   color: #605e5c;
   margin: 0;
+  line-height: 1.5;
+  word-wrap: break-word;
 }
 
 .close-dialog-field {
   display: grid;
-  gap: 8px;
+  gap: clamp(6px, 1.2vw, 8px);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .close-dialog-label {
-  font-size: 14px;
+  font-size: clamp(12px, 2vw, 14px);
   font-weight: 600;
   color: #323130;
+  margin: 0;
+  line-height: 1.3;
 }
 
 .close-dialog-select {
-  padding: 10px 12px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
   border: 1px solid #c8c6c4;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: clamp(6px, 1.2vw, 8px);
+  font-size: clamp(13px, 2vw, 14px);
   color: #323130;
   background: #fff;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23323130' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right clamp(8px, 1.5vw, 12px) center;
+  padding-right: clamp(32px, 5vw, 40px);
+  min-height: clamp(38px, 6vw, 44px);
 }
+
 .close-dialog-select:hover {
   border-color: #8a8886;
 }
+
 .close-dialog-select:focus {
   border-color: #0078d4;
-  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15);
+  box-shadow: 0 0 0 clamp(2px, 0.5vw, 3px) rgba(0, 120, 212, 0.15);
   outline: none;
 }
 
-/* Footer */
+.close-dialog-select:disabled {
+  background-color: #f3f2f1;
+  color: #a19f9d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .close-dialog-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding: clamp(14px, 2.5vw, 20px);
+  gap: clamp(8px, 1.5vw, 12px);
+  padding: clamp(12px, 2.5vw, 20px);
   border-top: 1px solid #edebe9;
   background: #fafafa;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  flex-wrap: wrap;
 }
 
 .close-dialog-btn {
-  padding: 10px 18px;
-  font-size: clamp(14px, 2vw, 16px);
+  padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2.5vw, 18px);
+  font-size: clamp(13px, 2vw, 16px);
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: clamp(6px, 1.2vw, 8px);
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
   border: 1px solid transparent;
-  min-width: 96px;
+  min-width: clamp(80px, 15vw, 96px);
+  min-height: clamp(36px, 6vw, 44px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
 }
 
 .close-dialog-confirm-btn {
   background: #0078d4;
   color: #fff;
   border-color: #0078d4;
+  box-shadow: 0 2px 4px rgba(0, 120, 212, 0.2);
 }
+
 .close-dialog-confirm-btn:hover:not(:disabled) {
   background: #106ebe;
   border-color: #106ebe;
+  box-shadow: 0 4px 8px rgba(0, 120, 212, 0.3);
+  transform: translateY(-1px);
 }
+
 .close-dialog-confirm-btn:active:not(:disabled) {
   background: #005a9e;
   border-color: #005a9e;
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 120, 212, 0.2);
 }
+
 .close-dialog-confirm-btn:disabled {
   background: #f3f2f1;
   color: #a19f9d;
   border-color: #f3f2f1;
   cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .close-dialog-cancel-btn {
   background: #fff;
   color: #323130;
   border-color: #c8c6c4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
+
 .close-dialog-cancel-btn:hover:not(:disabled) {
   background: #f3f2f1;
   border-color: #8a8886;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
+
 .close-dialog-cancel-btn:active:not(:disabled) {
   background: #edebe9;
+  transform: translateY(0);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
+
 .close-dialog-cancel-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  background: #fafafa;
+  box-shadow: none;
+  transform: none;
 }
 
-/* Disabled pulse */
 .close-dialog-btn:disabled {
   animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
-}
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 0.85; }
-}
-
-/* 📱 Mobile bottom sheet */
-@media (max-width: 640px) {
-  .close-dialog-overlay { align-items: flex-end; }
-  .close-dialog-container {
-    width: 100%;
-    max-height: 90vh;
-    border-radius: 12px 12px 0 0;
-  }
-  .close-dialog-footer {
-    flex-direction: column-reverse;
-  }
-  .close-dialog-btn {
-    width: 100%;
-  }
-}
-
-/* 💻 Tablets */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .close-dialog-container {
-    width: 95%;
-    max-width: 700px;
-  }
-}
-
-/* 🖥️ Large desktops */
-@media (min-width: 1440px) {
-  .close-dialog-container {
-    max-width: 800px;
-  }
-  .close-dialog-title {
-    font-size: 24px;
-  }
 }
 
 .selected-date-badge {
@@ -1309,17 +1465,9 @@
   white-space: nowrap;
   z-index: 10;
   box-shadow: 0 2px 8px rgba(79, 172, 254, 0.2);
-}
-
-@keyframes slideInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  max-width: calc(100vw - 40px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .clear-date-btn {
@@ -1338,6 +1486,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .clear-date-btn:hover {
@@ -1354,6 +1503,806 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: relative;
+}
+
+.filter-due-section {
+  position: relative;
+}
+
+@media (max-width: 479px) {
+  .filter-controls-wrapper {
+    padding: clamp(6px, 2vw, 10px);
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .filter-controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    min-height: auto;
+    padding-bottom: clamp(12px, 2vw, 16px);
+  }
+
+  .user-info-section {
+    width: 100%;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .filter-section,
+  .route-toggle-section,
+  .action-section {
+    width: 100%;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+
+  .route-status-placeholder {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .action-section {
+    justify-content: space-between;
+  }
+
+  .appointment-popup-container {
+    max-width: 95vw;
+  }
+  
+  .selected-date-badge {
+    position: static;
+    margin-top: 8px;
+    margin-bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-section {
+    margin-bottom: 0;
+  }
+
+  .filter-section.has-date-badge {
+    margin-bottom: 0;
+  }
+
+  .close-dialog-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .close-dialog-container {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes slideUpMobile {
+    from { 
+      transform: translateY(100%); 
+      opacity: 0; 
+    }
+    to { 
+      transform: translateY(0); 
+      opacity: 1; 
+    }
+  }
+
+  .close-dialog-header {
+    padding: 14px 16px;
+    min-height: 52px;
+  }
+
+  .close-dialog-title {
+    font-size: 17px;
+    padding-right: 10px;
+  }
+
+  .close-dialog-close-btn {
+    font-size: 18px;
+    padding: 6px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .close-dialog-content {
+    padding: 16px;
+    gap: 14px;
+    max-height: calc(92vh - 150px);
+  }
+
+  .close-dialog-question {
+    font-size: 15px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 13px;
+  }
+
+  .close-dialog-field {
+    gap: 7px;
+  }
+
+  .close-dialog-label {
+    font-size: 13px;
+  }
+
+  .close-dialog-select {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 44px;
+    border-radius: 8px;
+    padding-right: 38px;
+  }
+
+  .close-dialog-footer {
+    padding: 14px 16px;
+    gap: 10px;
+    flex-direction: column-reverse;
+  }
+
+  .close-dialog-btn {
+    width: 100%;
+    min-width: 100%;
+    padding: 12px 16px;
+    font-size: 15px;
+    min-height: 48px;
+    border-radius: 8px;
+  }
+
+  .close-dialog-confirm-btn,
+  .close-dialog-cancel-btn {
+    justify-content: center;
+  }
+
+  .appointment-popup-directions-btn {
+    font-size: 13px;
+    padding: 10px 14px;
+    margin-top: 10px;
+  }
+  
+  .appointment-popup-directions-icon {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 480px) and (max-width: 639px) {
+  .filter-controls-wrapper {
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .filter-controls-bar {
+    gap: 10px;
+    min-height: auto;
+    padding-bottom: clamp(12px, 2vw, 16px);
+  }
+
+  .filter-section {
+    flex: 1 1 45%;
+  }
+
+  .route-toggle-section {
+    flex: 1 1 100%;
+  }
+
+  .action-section {
+    flex: 1 1 100%;
+  }
+
+  .user-info-section {
+    flex: 0 0 100%;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .selected-date-badge {
+    max-width: calc(100% - 20px);
+  }
+
+  .close-dialog-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .close-dialog-container {
+    width: 100%;
+    max-width: 100%;
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .close-dialog-header {
+    padding: 15px 18px;
+    min-height: 54px;
+  }
+
+  .close-dialog-title {
+    font-size: 18px;
+  }
+
+  .close-dialog-close-btn {
+    font-size: 18px;
+    min-width: 38px;
+    min-height: 38px;
+  }
+
+  .close-dialog-content {
+    padding: 18px;
+    gap: 14px;
+    max-height: calc(90vh - 160px);
+  }
+
+  .close-dialog-question {
+    font-size: 16px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 13px;
+  }
+
+  .close-dialog-label {
+    font-size: 13px;
+  }
+
+  .close-dialog-select {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .close-dialog-footer {
+    padding: 15px 18px;
+    gap: 10px;
+    flex-direction: column-reverse;
+  }
+
+  .close-dialog-btn {
+    width: 100%;
+    min-width: 100%;
+    padding: 11px 16px;
+    font-size: 15px;
+    min-height: 46px;
+  }
+
+  .appointment-popup-directions-btn {
+    font-size: 13px;
+    padding: 11px 15px;
+    margin-top: 11px;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 767px) {
+  .filter-controls-wrapper {
+    padding: 11px;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .filter-controls-bar {
+    gap: 10px;
+    padding: 13px 15px;
+    min-height: 66px;
+  }
+
+  .user-info-section {
+    min-width: 130px;
+  }
+
+  .user-info-label {
+    font-size: 9px;
+  }
+
+  .user-info-name {
+    font-size: 12px;
+  }
+
+  .filter-section {
+    min-width: 140px;
+  }
+
+  .filter-label {
+    font-size: 9px;
+  }
+
+  .filter-select {
+    font-size: 12px;
+    padding: 8px 11px;
+    padding-right: 30px;
+  }
+
+  .route-toggle-section {
+    gap: 9px;
+  }
+
+  .route-toggle-label {
+    font-size: 12px;
+  }
+
+  .route-status-placeholder {
+    min-width: 160px;
+  }
+
+  .route-calculating-indicator {
+    font-size: 10px;
+    padding: 4px 9px;
+  }
+
+  .route-info {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .route-info-item {
+    font-size: 10px;
+    padding: 4px 9px;
+  }
+
+  .action-section {
+    gap: 9px;
+  }
+
+  .refresh-button {
+    font-size: 12px;
+    padding: 8px 15px;
+  }
+
+  .appointment-count {
+    font-size: 11px;
+    padding: 8px 13px;
+  }
+
+  .selected-date-badge {
+    max-width: 170px;
+    font-size: 11px;
+  }
+
+  .appointment-azure-map-container {
+    min-height: 520px;
+  }
+
+  .close-dialog-container {
+    width: 90vw;
+    max-width: 540px;
+    max-height: 83vh;
+  }
+
+  .close-dialog-header {
+    padding: 14px 17px;
+    min-height: 52px;
+  }
+
+  .close-dialog-title {
+    font-size: 17px;
+  }
+
+  .close-dialog-close-btn {
+    font-size: 17px;
+    min-width: 35px;
+    min-height: 35px;
+  }
+
+  .close-dialog-content {
+    padding: 17px;
+    gap: 13px;
+  }
+
+  .close-dialog-question {
+    font-size: 15px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 13px;
+  }
+
+  .close-dialog-label {
+    font-size: 12px;
+  }
+
+  .close-dialog-select {
+    padding: 9px 11px;
+    font-size: 13px;
+    min-height: 39px;
+  }
+
+  .close-dialog-footer {
+    padding: 14px 17px;
+    gap: 9px;
+  }
+
+  .close-dialog-btn {
+    padding: 9px 14px;
+    font-size: 13px;
+    min-height: 39px;
+    min-width: 85px;
+  }
+
+  .appointment-popup-directions-btn {
+    font-size: 13px;
+    padding: 10px 14px;
+    margin-top: 10px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 899px) {
+  .filter-controls-wrapper {
+    padding: 12px;
+    overflow-x: hidden;
+    overflow-y: visible;
+  }
+
+  .filter-controls-bar {
+    gap: 10px;
+    padding: 14px 16px;
+    min-height: 68px;
+  }
+
+  .user-info-section {
+    min-width: 140px;
+  }
+
+  .user-info-label {
+    font-size: 9px;
+  }
+
+  .user-info-name {
+    font-size: 13px;
+  }
+
+  .filter-section {
+    min-width: 145px;
+  }
+
+  .filter-label {
+    font-size: 9px;
+  }
+
+  .filter-select {
+    font-size: 13px;
+    padding: 9px 12px;
+    padding-right: 32px;
+  }
+
+  .route-toggle-section {
+    gap: 10px;
+  }
+
+  .route-toggle-label {
+    font-size: 13px;
+  }
+
+  .route-status-placeholder {
+    min-width: 180px;
+  }
+
+  .route-calculating-indicator {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .route-info {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .route-info-item {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .action-section {
+    gap: 10px;
+  }
+
+  .refresh-button {
+    font-size: 13px;
+    padding: 9px 16px;
+  }
+
+  .appointment-count {
+    font-size: 12px;
+    padding: 9px 14px;
+  }
+
+  .selected-date-badge {
+    max-width: 180px;
+    font-size: 11px;
+  }
+
+  .appointment-azure-map-container {
+    min-height: 550px;
+  }
+
+  .close-dialog-container {
+    width: 88vw;
+    max-width: 560px;
+    max-height: 82vh;
+  }
+
+  .close-dialog-header {
+    padding: 15px 18px;
+    min-height: 54px;
+  }
+
+  .close-dialog-title {
+    font-size: 18px;
+  }
+
+  .close-dialog-close-btn {
+    font-size: 17px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .close-dialog-content {
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .close-dialog-question {
+    font-size: 16px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 13px;
+  }
+
+  .close-dialog-label {
+    font-size: 13px;
+  }
+
+  .close-dialog-select {
+    padding: 9px 11px;
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .close-dialog-footer {
+    padding: 15px 18px;
+    gap: 10px;
+  }
+
+  .close-dialog-btn {
+    padding: 9px 15px;
+    font-size: 14px;
+    min-height: 40px;
+    min-width: 88px;
+  }
+
+  .appointment-popup-directions-btn {
+    font-size: 13px;
+    padding: 11px 15px;
+    margin-top: 11px;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1023px) {
+  .filter-controls-wrapper {
+    padding: 13px;
+  }
+
+  .filter-controls-bar {
+    gap: 11px;
+    padding: 15px 18px;
+    min-height: 70px;
+  }
+
+  .user-info-section {
+    min-width: 150px;
+  }
+
+  .user-info-label {
+    font-size: 9px;
+  }
+
+  .user-info-name {
+    font-size: 14px;
+  }
+
+  .filter-section {
+    min-width: 155px;
+  }
+
+  .filter-label {
+    font-size: 9px;
+  }
+
+  .filter-select {
+    font-size: 13px;
+    padding: 9px 13px;
+    padding-right: 33px;
+  }
+
+  .route-toggle-label {
+    font-size: 13px;
+  }
+
+  .route-status-placeholder {
+    min-width: 200px;
+  }
+
+  .route-calculating-indicator {
+    font-size: 11px;
+    padding: 5px 11px;
+  }
+
+  .route-info {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .route-info-item {
+    font-size: 11px;
+    padding: 5px 11px;
+  }
+
+  .action-section {
+    gap: 11px;
+  }
+
+  .refresh-button {
+    font-size: 13px;
+    padding: 9px 17px;
+  }
+
+  .appointment-count {
+    font-size: 12px;
+    padding: 9px 15px;
+  }
+
+  .selected-date-badge {
+    max-width: 190px;
+    font-size: 11px;
+  }
+
+  .appointment-azure-map-container {
+    min-height: 575px;
+  }
+
+  .close-dialog-container {
+    width: 86vw;
+    max-width: 575px;
+    max-height: 80vh;
+  }
+
+  .close-dialog-header {
+    padding: 16px 19px;
+    min-height: 55px;
+  }
+
+  .close-dialog-title {
+    font-size: 19px;
+  }
+
+  .close-dialog-close-btn {
+    font-size: 17px;
+    min-width: 37px;
+    min-height: 37px;
+  }
+
+  .close-dialog-content {
+    padding: 19px;
+    gap: 14px;
+  }
+
+  .close-dialog-question {
+    font-size: 16px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 14px;
+  }
+
+  .close-dialog-label {
+    font-size: 13px;
+  }
+
+  .close-dialog-select {
+    padding: 9px 12px;
+    font-size: 14px;
+    min-height: 41px;
+  }
+
+  .close-dialog-footer {
+    padding: 16px 19px;
+    gap: 10px;
+  }
+
+  .close-dialog-btn {
+    padding: 9px 16px;
+    font-size: 14px;
+    min-height: 41px;
+    min-width: 89px;
+  }
+
+  .appointment-popup-directions-btn {
+    font-size: 14px;
+    padding: 11px 16px;
+    margin-top: 12px;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .filter-controls-wrapper {
+    padding: 14px;
+  }
+
+  .filter-controls-bar {
+    gap: 12px;
+    padding: 16px 19px;
+  }
+
+  .user-info-section {
+    min-width: 160px;
+  }
+
+  .filter-section {
+    min-width: 160px;
+  }
+
+  .route-status-placeholder {
+    min-width: 220px;
+  }
+
+  .appointment-azure-map-container {
+    min-height: 600px;
+  }
+
+  .close-dialog-container {
+    width: 85vw;
+    max-width: 590px;
+    max-height: 80vh;
+  }
+
+  .close-dialog-header {
+    padding: 17px 20px;
+    min-height: 58px;
+  }
+
+  .close-dialog-title {
+    font-size: 20px;
+  }
+
+  .close-dialog-content {
+    padding: 21px;
+    gap: 15px;
+  }
+
+  .close-dialog-question {
+    font-size: 17px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 14px;
+  }
+
+  .close-dialog-select {
+    min-height: 42px;
+  }
+
+  .close-dialog-footer {
+    padding: 17px 20px;
+    gap: 11px;
+  }
+
+  .close-dialog-btn {
+    min-height: 42px;
+    min-width: 92px;
+  }
+
+  .appointment-popup-directions-btn {
+    font-size: 14px;
+    padding: 12px 16px;
+    margin-top: 12px;
+  }
 }
 
 @media (min-width: 1280px) and (max-width: 1365px) {
@@ -1367,6 +2316,32 @@
 
   .route-status-placeholder {
     min-width: 220px;
+  }
+
+  .close-dialog-container {
+    width: 80vw;
+    max-width: 595px;
+  }
+
+  .close-dialog-header {
+    padding: 18px 20px;
+    min-height: 60px;
+  }
+
+  .close-dialog-title {
+    font-size: 20px;
+  }
+
+  .close-dialog-content {
+    padding: 22px;
+  }
+
+  .close-dialog-footer {
+    padding: 18px 20px;
+  }
+
+  .close-dialog-btn {
+    min-width: 94px;
   }
 }
 
@@ -1386,6 +2361,40 @@
   .appointment-azure-map-container {
     min-height: 600px;
   }
+
+  .close-dialog-container {
+    width: 75vw;
+    max-width: 600px;
+  }
+
+  .close-dialog-header {
+    padding: 18px 20px;
+    min-height: 62px;
+  }
+
+  .close-dialog-title {
+    font-size: 21px;
+  }
+
+  .close-dialog-content {
+    padding: 23px;
+  }
+
+  .close-dialog-question {
+    font-size: 18px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 15px;
+  }
+
+  .close-dialog-footer {
+    padding: 18px 20px;
+  }
+
+  .close-dialog-btn {
+    min-height: 43px;
+  }
 }
 
 @media (min-width: 1440px) and (max-width: 1599px) {
@@ -1404,6 +2413,59 @@
   .appointment-azure-map-container {
     min-height: 650px;
   }
+
+  .close-dialog-container {
+    max-width: 650px;
+  }
+
+  .close-dialog-header {
+    padding: 19px 22px;
+    min-height: 64px;
+  }
+
+  .close-dialog-title {
+    font-size: 22px;
+  }
+
+  .close-dialog-close-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .close-dialog-content {
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .close-dialog-question {
+    font-size: 18px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 15px;
+  }
+
+  .close-dialog-label {
+    font-size: 14px;
+  }
+
+  .close-dialog-select {
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 43px;
+  }
+
+  .close-dialog-footer {
+    padding: 19px 22px;
+    gap: 12px;
+  }
+
+  .close-dialog-btn {
+    padding: 10px 18px;
+    font-size: 15px;
+    min-height: 43px;
+    min-width: 95px;
+  }
 }
 
 @media (min-width: 1600px) and (max-width: 1919px) {
@@ -1421,6 +2483,42 @@
 
   .appointment-azure-map-container {
     min-height: 700px;
+  }
+
+  .close-dialog-container {
+    max-width: 680px;
+  }
+
+  .close-dialog-header {
+    padding: 20px 22px;
+    min-height: 66px;
+  }
+
+  .close-dialog-title {
+    font-size: 22px;
+  }
+
+  .close-dialog-content {
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .close-dialog-question {
+    font-size: 18px;
+  }
+
+  .close-dialog-select {
+    min-height: 44px;
+  }
+
+  .close-dialog-footer {
+    padding: 20px 22px;
+    gap: 12px;
+  }
+
+  .close-dialog-btn {
+    min-height: 44px;
+    min-width: 96px;
   }
 }
 
@@ -1444,6 +2542,60 @@
 
   .appointment-azure-map-container {
     min-height: 750px;
+  }
+
+  .close-dialog-container {
+    max-width: 720px;
+  }
+
+  .close-dialog-header {
+    padding: 20px 24px;
+    min-height: 68px;
+  }
+
+  .close-dialog-title {
+    font-size: 23px;
+  }
+
+  .close-dialog-close-btn {
+    font-size: 20px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  .close-dialog-content {
+    padding: 26px;
+    gap: 17px;
+  }
+
+  .close-dialog-question {
+    font-size: 19px;
+  }
+
+  .close-dialog-instruction {
+    font-size: 16px;
+  }
+
+  .close-dialog-label {
+    font-size: 15px;
+  }
+
+  .close-dialog-select {
+    padding: 11px 13px;
+    font-size: 15px;
+    min-height: 46px;
+  }
+
+  .close-dialog-footer {
+    padding: 20px 24px;
+    gap: 13px;
+  }
+
+  .close-dialog-btn {
+    padding: 11px 20px;
+    font-size: 16px;
+    min-height: 46px;
+    min-width: 100px;
   }
 }
 
@@ -1480,133 +2632,78 @@
   .refresh-button {
     font-size: 16px;
   }
-}
 
-@media (max-width: 479px) {
-  .filter-controls-wrapper {
-    padding: clamp(6px, 2vw, 10px);
+  .close-dialog-container {
+    max-width: 800px;
   }
 
-  .filter-controls-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    min-height: auto;
+  .close-dialog-header {
+    padding: 22px 26px;
+    min-height: 72px;
   }
 
-  .user-info-section {
-    width: 100%;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e9ecef;
+  .close-dialog-title {
+    font-size: 26px;
   }
 
-  .filter-section,
-  .route-toggle-section,
-  .action-section {
-    width: 100%;
+  .close-dialog-close-btn {
+    font-size: 22px;
+    padding: 8px;
+    min-width: 46px;
+    min-height: 46px;
   }
 
-  .filter-select {
-    width: 100%;
+  .close-dialog-content {
+    padding: 28px;
+    gap: 18px;
   }
 
-  .route-status-placeholder {
-    width: 100%;
-    min-width: auto;
+  .close-dialog-question {
+    font-size: 21px;
   }
 
-  .action-section {
-    justify-content: space-between;
+  .close-dialog-instruction {
+    font-size: 17px;
   }
 
-  .appointment-popup-container {
-    max-width: 95vw;
-  }
-  
-  .selected-date-badge {
-    position: static;
-    margin-top: 8px;
-  }
-}
-
-@media (min-width: 480px) and (max-width: 767px) {
-  .filter-controls-bar {
+  .close-dialog-field {
     gap: 10px;
-    min-height: auto;
   }
 
-  .filter-section {
-    flex: 1 1 45%;
+  .close-dialog-label {
+    font-size: 16px;
   }
 
-  .route-toggle-section {
-    flex: 1 1 100%;
+  .close-dialog-select {
+    padding: 12px 14px;
+    font-size: 16px;
+    min-height: 50px;
+    border-radius: 10px;
+    padding-right: 44px;
   }
 
-  .action-section {
-    flex: 1 1 100%;
+  .close-dialog-footer {
+    padding: 22px 26px;
+    gap: 14px;
   }
 
-  .user-info-section {
-    flex: 0 0 100%;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e9ecef;
+  .close-dialog-btn {
+    padding: 12px 22px;
+    font-size: 17px;
+    min-height: 50px;
+    min-width: 110px;
+    border-radius: 10px;
   }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   .filter-controls-bar {
-    gap: 12px;
+    border-width: 0.5px;
   }
 
-  .filter-section {
-    min-width: 150px;
-  }
-
-  .route-status-placeholder {
-    min-width: 200px;
-  }
-
-  .route-info {
-    flex-direction: column;
-  }
-}
-
-@media (min-width: 1024px) and (max-width: 1279px) {
-  .filter-section {
-    min-width: 160px;
-  }
-
-  .route-status-placeholder {
-    min-width: 220px;
-  }
-}
-
-@media (min-width: 1280px) and (max-width: 1919px) {
-  .filter-section {
-    min-width: 180px;
-  }
-
-  .route-status-placeholder {
-    min-width: 250px;
-  }
-}
-
-@media (min-width: 1920px) {
-  .filter-controls-wrapper {
-    padding: 18px;
-  }
-
-  .filter-controls-bar {
-    padding: 18px 22px;
-  }
-
-  .filter-section {
-    min-width: 200px;
-  }
-
-  .route-status-placeholder {
-    min-width: 280px;
+  .atlas-html-marker {
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 }
 
@@ -1623,6 +2720,25 @@
   .loading-spinner {
     animation: none;
     border-top-color: transparent;
+  }
+
+  .appointment-popup-directions-btn {
+    transition: none;
+  }
+
+  .close-dialog-overlay,
+  .close-dialog-container,
+  .close-dialog-close-btn,
+  .close-dialog-select,
+  .close-dialog-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .close-dialog-btn:hover:not(:disabled),
+  .close-dialog-cancel-btn:hover:not(:disabled),
+  .close-dialog-confirm-btn:hover:not(:disabled) {
+    transform: none !important;
   }
 }
 
@@ -1651,6 +2767,49 @@
   .appointment-popup-regarding {
     border-left-width: 4px;
   }
+
+  .appointment-popup-directions-btn {
+    border-width: 2px;
+    border-color: #000000;
+  }
+
+  .appointment-popup-directions-btn:hover:not(:disabled) {
+    background: #000000;
+    color: #ffffff;
+  }
+
+  .appointment-popup-directions-btn:disabled {
+    border-color: #6c757d;
+  }
+
+  .close-dialog-container {
+    border: 3px solid currentColor;
+  }
+
+  .close-dialog-header {
+    border-bottom-width: 2px;
+  }
+
+  .close-dialog-footer {
+    border-top-width: 2px;
+  }
+
+  .close-dialog-select,
+  .close-dialog-btn {
+    border-width: 2px;
+  }
+
+  .close-dialog-confirm-btn {
+    background: #000000;
+    color: #ffffff;
+    border-color: #000000;
+  }
+
+  .close-dialog-cancel-btn {
+    background: #ffffff;
+    color: #000000;
+    border-color: #000000;
+  }
 }
 
 @media (hover: none) {
@@ -1667,6 +2826,26 @@
   .atlas-control-pitch button:active {
     background: #f0f0f0;
   }
+
+  .appointment-popup-directions-btn:active:not(:disabled) {
+    background: #edebe9;
+  }
+
+  .close-dialog-close-btn:active {
+    transform: scale(0.92);
+  }
+
+  .close-dialog-select:active {
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .close-dialog-confirm-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .close-dialog-cancel-btn:active:not(:disabled) {
+    transform: scale(0.97);
+  }
 }
 
 @media print {
@@ -1674,7 +2853,9 @@
   .pcf-loading-container,
   .pcf-error-container,
   .loading-overlay,
-  .error-overlay {
+  .error-overlay,
+  .close-dialog-overlay,
+  .close-dialog-container {
     display: none;
   }
 
@@ -1691,86 +2872,28 @@
   }
 }
 
-@media (max-width: 479px) {
-  .appointment-popup-directions-btn {
-    font-size: 13px;
-    padding: 10px 14px;
-    margin-top: 10px;
-  }
-  
-  .appointment-popup-directions-icon {
-    font-size: 15px;
-  }
-}
-
-@media (min-width: 480px) and (max-width: 767px) {
-  .appointment-popup-directions-btn {
-    font-size: 13px;
-    padding: 11px 15px;
-    margin-top: 11px;
-  }
-}
-
-@media (min-width: 768px) {
-  .appointment-popup-directions-btn {
-    font-size: 14px;
-    padding: 12px 16px;
-    margin-top: 12px;
-  }
-}
-
-@media (prefers-contrast: high) {
-  .appointment-popup-directions-btn {
-    border-width: 2px;
-    border-color: #000000;
-  }
-
-  .appointment-popup-directions-btn:hover:not(:disabled) {
-    background: #000000;
-    color: #ffffff;
-  }
-
-  .appointment-popup-directions-btn:disabled {
-    border-color: #6c757d;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .appointment-popup-directions-btn {
-    transition: none;
-  }
-}
-
-@media (hover: none) {
-  .appointment-popup-directions-btn:active:not(:disabled) {
-    background: #edebe9;
-  }
-}
-
-@media (max-width: 640px) {
+@media (max-width: 767px) and (orientation: landscape) {
   .close-dialog-container {
-    width: 95%;
     max-height: 95vh;
   }
 
-  .close-dialog-header {
-    padding: 12px 16px;
+  .close-dialog-content {
+    max-height: calc(95vh - 140px);
   }
+}
 
-  .close-dialog-title {
-    font-size: 18px;
+@media (max-height: 600px) {
+  .close-dialog-container {
+    max-height: 95vh;
   }
 
   .close-dialog-content {
-    padding: 16px;
+    padding: clamp(12px, 2vw, 16px);
+    gap: clamp(8px, 1.5vw, 12px);
   }
 
+  .close-dialog-header,
   .close-dialog-footer {
-    padding: 12px 16px;
-    flex-direction: column-reverse;
-  }
-
-  .close-dialog-btn {
-    width: 100%;
+    padding: clamp(10px, 2vw, 14px);
   }
 }

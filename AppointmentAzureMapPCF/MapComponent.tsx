@@ -112,20 +112,29 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return calculateDistance(pos1, pos2) < DISTANCE_THRESHOLD;
   };
 
-  const offsetPositionSlightly = (
+  const offsetNearbyMarker = (
     basePosition: atlas.data.Position,
     index: number,
-    totalCount: number
+    totalCount: number,
+    zoom: number
   ): atlas.data.Position => {
-    const angleStep = (Math.PI * 2) / Math.max(totalCount, 3);
+    if (totalCount <= 1) return basePosition;
+
+    const angleStep = (Math.PI * 2) / totalCount;
     const angle = angleStep * index;
-    const radius = 0.0008; // ~80 meters offset
+
+    // Base radius (degrees) at default zoom (e.g., zoom 10)
+    const baseRadius = 0.0005;
+
+    // Scale radius by zoom: higher zoom = smaller offset
+    const radius = baseRadius * Math.pow(2, 10 - zoom);
 
     const offsetLon = basePosition[0] + radius * Math.cos(angle);
     const offsetLat = basePosition[1] + radius * Math.sin(angle);
 
     return [offsetLon, offsetLat];
   };
+
 
   const updateAppointmentStatus = React.useCallback(
     async (appointmentId: string, newStateCode: number) => {
@@ -734,64 +743,60 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     return `
       <div class="appointment-popup-container">
-        ${
-          !isSingleAppointment
-            ? `<div class="appointment-popup-badge">📌 ${appts.length} appointments at this location</div>`
-            : ""
-        }
+        ${!isSingleAppointment
+        ? `<div class="appointment-popup-badge">📌 ${appts.length} appointments at this location</div>`
+        : ""
+      }
         <div class="appointment-popup-list">
           ${appts
-            .map((appt, index) => {
-              const startTime = formatDateTime(appt.scheduledstart);
-              const endTime = formatDateTime(appt.scheduledend);
-              const duration = calculateDuration(
-                appt.scheduledstart,
-                appt.scheduledend
-              );
-              const description =
-                appt.description || "No description available";
-              const regarding = appt.regardingobjectidname || "";
-              const isUpdating = updatingAppointments.has(appt.id);
+        .map((appt, index) => {
+          const startTime = formatDateTime(appt.scheduledstart);
+          const endTime = formatDateTime(appt.scheduledend);
+          const duration = calculateDuration(
+            appt.scheduledstart,
+            appt.scheduledend
+          );
+          const description =
+            appt.description || "No description available";
+          const regarding = appt.regardingobjectidname || "";
+          const isUpdating = updatingAppointments.has(appt.id);
 
-              return `
-                <div class="appointment-popup-item ${
-                  index > 0 ? "appointment-popup-item-separator" : ""
-                }">
+          return `
+                <div class="appointment-popup-item ${index > 0 ? "appointment-popup-item-separator" : ""
+            }">
                   <h4 class="appointment-popup-subject">${escapeHtml(
-                    appt.subject
-                  )}</h4>
+              appt.subject
+            )}</h4>
                   <div class="appointment-popup-details">
                     <div class="appointment-popup-detail-row">
                       <span class="appointment-popup-detail-icon">📅</span>
                       <span class="appointment-popup-detail-text">${escapeHtml(
-                        startTime
-                      )}</span>
+              startTime
+            )}</span>
                     </div>
                     <div class="appointment-popup-detail-row">
                       <span class="appointment-popup-detail-icon">🕐</span>
                       <span class="appointment-popup-detail-text">${escapeHtml(
-                        endTime
-                      )}</span>
+              endTime
+            )}</span>
                     </div>
                     <div class="appointment-popup-detail-row">
                       <span class="appointment-popup-detail-icon">⏱️</span>
                       <span class="appointment-popup-detail-text">${duration}</span>
                     </div>
                   </div>
-                  ${
-                    regarding
-                      ? `<div class="appointment-popup-regarding"><span class="appointment-popup-regarding-label">👤 Regarding:</span><div class="appointment-popup-regarding-value">${escapeHtml(
-                          regarding
-                        )}</div></div>`
-                      : ""
-                  }
-                  ${
-                    description && description !== "No description available"
-                      ? `<div class="appointment-popup-description">${escapeHtml(
-                          description
-                        )}</div>`
-                      : ""
-                  }
+                  ${regarding
+              ? `<div class="appointment-popup-regarding"><span class="appointment-popup-regarding-label">👤 Regarding:</span><div class="appointment-popup-regarding-value">${escapeHtml(
+                regarding
+              )}</div></div>`
+              : ""
+            }
+                  ${description && description !== "No description available"
+              ? `<div class="appointment-popup-description">${escapeHtml(
+                description
+              )}</div>`
+              : ""
+            }
                   <div class="appointment-popup-actions">
                     <button 
                       class="appointment-popup-directions-btn" 
@@ -812,8 +817,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   </div>
                 </div>
               `;
-            })
-            .join("")}
+        })
+        .join("")}
         </div>
       </div>
     `;
@@ -971,27 +976,22 @@ const MapComponent: React.FC<MapComponentProps> = ({
       markerCount++;
 
       let displayPosition = position;
-      if (hasDuplicates) {
-        displayPosition = offsetPositionSlightly(
-          position,
-          indexInGroup,
-          addressesAtPosition.length
-        );
-        console.log(
-          `[Markers] Duplicate location detected for "${address.substring(
-            0,
-            50
-          )}". Offsetting marker ${indexInGroup + 1} of ${
-            addressesAtPosition.length
-          }`
-        );
-      }
+      const currentZoom = map.getCamera().zoom ?? 10;
+      displayPosition = offsetNearbyMarker(
+        position,
+        indexInGroup,
+        addressesAtPosition.length,
+        currentZoom
+      );
+
+      const isFirstMarker = markerCount === 1;
 
       const marker = new atlas.HtmlMarker({
-        color: "DodgerBlue",
+        color: isFirstMarker ? "#E53935" : "DodgerBlue",
         text: markerCount.toString(),
         position: displayPosition,
       });
+
 
       map.events.add("click", marker, () => {
         popup.close();
@@ -1193,16 +1193,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
           </div>
 
           <div className="route-toggle-section">
-            <label className="route-toggle-container">
-              <input
-                type="checkbox"
-                checked={showRoute}
-                onChange={handleRouteToggleClick}
-                className="route-toggle-checkbox"
-                disabled={isCalculatingRoute}
-              />
-              <span className="route-toggle-label">Show Route</span>
-            </label>
+            {appointments.length > 0 && (
+              <label className="route-toggle-container">
+                <input
+                  type="checkbox"
+                  checked={showRoute}
+                  onChange={handleRouteToggleClick}
+                  className="route-toggle-checkbox"
+                  disabled={isCalculatingRoute}
+                />
+                <span className="route-toggle-label">Show Route</span>
+              </label>
+            )}
 
             <div className="route-status-placeholder">
               {isCalculatingRoute ? (
@@ -1247,8 +1249,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   ? "No appointments available."
                   : currentFilter.dueFilter === "customDateRange" &&
                     currentFilter.customDateRange
-                  ? `No appointments found for ${formatSelectedDateRange()}.`
-                  : "No appointments match the current filter criteria."}
+                    ? `No appointments found for ${formatSelectedDateRange()}.`
+                    : "No appointments match the current filter criteria."}
               </p>
             </div>
           )}
