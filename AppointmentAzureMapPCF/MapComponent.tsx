@@ -41,7 +41,6 @@ interface CachedRoute {
   timestamp: number;
 }
 
-// Status code constants for appointments
 const AppointmentStatus = {
   Open: 0,
   Completed: 1,
@@ -112,33 +111,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
     return calculateDistance(pos1, pos2) < DISTANCE_THRESHOLD;
   };
 
-  const offsetNearbyMarker = (
-    basePosition: atlas.data.Position,
-    index: number,
-    totalCount: number,
-    zoom: number
-  ): atlas.data.Position => {
-    if (totalCount <= 1) return basePosition;
-
-    const angleStep = (Math.PI * 2) / totalCount;
-    const angle = angleStep * index;
-
-    // Base radius (degrees) at default zoom (e.g., zoom 10)
-    const baseRadius = 0.0005;
-
-    // Scale radius by zoom: higher zoom = smaller offset
-    const radius = baseRadius * Math.pow(2, 10 - zoom);
-
-    const offsetLon = basePosition[0] + radius * Math.cos(angle);
-    const offsetLat = basePosition[1] + radius * Math.sin(angle);
-
-    return [offsetLon, offsetLat];
-  };
-
-
   const updateAppointmentStatus = React.useCallback(
     async (appointmentId: string, newStateCode: number) => {
-      // Allow only Completed or Canceled
       if (
         newStateCode !== AppointmentStatus.Completed &&
         newStateCode !== AppointmentStatus.Canceled
@@ -148,10 +122,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         );
         return;
       }
-
-      console.log(
-        `[Status Update] Updating appointment ${appointmentId} to state ${newStateCode}`
-      );
 
       setUpdatingAppointments((prev) => new Set(prev).add(appointmentId));
       setShowCloseDialog(false);
@@ -165,10 +135,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
           "appointment",
           appointmentId,
           updateData
-        );
-
-        console.log(
-          `[Status Update] ✓ Appointment ${appointmentId} closed successfully`
         );
 
         popupRef.current?.close();
@@ -217,10 +183,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const openBingMapDirections = React.useCallback(
     (destinationAddress: string, appointmentSubject: string) => {
-      console.log("[Directions] Function called");
-      console.log("[Directions] Address:", destinationAddress);
-      console.log("[Directions] Subject:", appointmentSubject);
-
       if (!destinationAddress || destinationAddress.trim() === "") {
         console.warn("[Directions] No destination address available");
         alert("No address available");
@@ -231,21 +193,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
         const encodedAddress = encodeURIComponent(destinationAddress.trim());
         const bingMapsUrl = `https://www.bing.com/maps?q=${encodedAddress}`;
 
-        console.log(
-          "[Directions] Opening Bing Maps with location:",
-          bingMapsUrl
-        );
-
         const newWindow = window.open(bingMapsUrl, "_blank");
 
         if (newWindow === null) {
           console.error("[Directions] Pop-up was blocked by browser");
           alert("Pop-up blocked! Please allow pop-ups for this site.");
-        } else {
-          console.log(
-            "[Directions] ✓ Bing Maps opened showing:",
-            appointmentSubject
-          );
         }
       } catch (error) {
         console.error("[Directions] Error opening Bing Maps:", error);
@@ -297,12 +249,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     };
   }, [appointments, showRoute, userLocation, isLoading]);
 
-  // Setup event delegation for buttons in popup
   React.useEffect(() => {
     const handlePopupClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
 
-      // Handle directions button
       if (target.classList.contains("appointment-popup-directions-btn")) {
         e.preventDefault();
         e.stopPropagation();
@@ -310,39 +260,22 @@ const MapComponent: React.FC<MapComponentProps> = ({
         const address = target.getAttribute("data-address");
         const subject = target.getAttribute("data-subject");
 
-        console.log("[Button Click] Address:", address, "Subject:", subject);
-
         if (address && subject) {
           openBingMapDirections(address, subject);
-        } else {
-          console.error("[Button Click] Missing address or subject");
         }
       }
 
-      // Handle close appointment button
       if (target.classList.contains("appointment-popup-close-btn")) {
         e.preventDefault();
         e.stopPropagation();
 
         const appointmentId = target.getAttribute("data-appointment-id");
-        const appointmentSubject = target.getAttribute(
-          "data-appointment-subject"
-        );
-
-        console.log("[Close Button Click] Appointment ID:", appointmentId);
 
         if (appointmentId) {
-          // Find the appointment in the current appointments list
           const appointment = appointments.find((a) => a.id === appointmentId);
           if (appointment) {
             handleCloseAppointment(appointment);
-          } else {
-            console.error(
-              "[Close Button Click] Appointment not found in current list"
-            );
           }
-        } else {
-          console.error("[Close Button Click] Missing appointment ID");
         }
       }
     };
@@ -500,9 +433,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             result.position.lat,
           ];
           geocodeCacheRef.current[normalizedAddress] = position;
-          console.log(
-            `[Geocode] ${address} → [${position[0]}, ${position[1]}]`
-          );
           return position;
         }
       }
@@ -578,7 +508,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       map.markers.add(userMarker);
       userMarkerRef.current = userMarker;
-      console.log(`[User Marker] Added at [${position[0]}, ${position[1]}]`);
     } else {
       console.warn("[User Location] Failed to geocode user address");
       setUserLocation(null);
@@ -756,8 +685,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
             appt.scheduledstart,
             appt.scheduledend
           );
-          const description =
-            appt.description || "No description available";
           const regarding = appt.regardingobjectidname || "";
           const isUpdating = updatingAppointments.has(appt.id);
 
@@ -789,12 +716,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
               ? `<div class="appointment-popup-regarding"><span class="appointment-popup-regarding-label">👤 Regarding:</span><div class="appointment-popup-regarding-value">${escapeHtml(
                 regarding
               )}</div></div>`
-              : ""
-            }
-                  ${description && description !== "No description available"
-              ? `<div class="appointment-popup-description">${escapeHtml(
-                description
-              )}</div>`
               : ""
             }
                   <div class="appointment-popup-actions">
@@ -878,28 +799,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       if (appt.location && appt.location.trim()) {
         const locationAddress = appt.location.trim();
-        console.log(
-          `[Address Priority] Using location field for "${appt.subject}": ${locationAddress}`
-        );
         return { appt, address: locationAddress, source: "location" };
       }
 
-      console.log(
-        `[Address Priority] Location field blank for "${appt.subject}", checking regarding entity`
-      );
       if (appt.regardingobjectid) {
         address = await fetchRegardingAddress(appt.regardingobjectid);
         if (address && address.trim()) {
-          console.log(
-            `[Address Priority] ✓ Using regarding address for "${appt.subject}"`
-          );
           return { appt, address: address.trim(), source: "regarding" };
         }
       }
 
-      console.log(
-        `[Address Priority] ✗ No valid address found for "${appt.subject}"`
-      );
       return null;
     });
 
@@ -918,14 +827,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     const uniqueAddresses = Array.from(addressMap.keys());
     if (uniqueAddresses.length === 0) {
-      console.log(`[Markers] No appointments with valid addresses to display`);
       fitMapToMarkers();
       return;
     }
-
-    console.log(
-      `[Markers] Found ${uniqueAddresses.length} unique addresses from ${appointments.length} appointments`
-    );
 
     const geocodeResults = await Promise.all(
       uniqueAddresses.map((addr) =>
@@ -948,18 +852,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       return apptA.scheduledstart.getTime() - apptB.scheduledstart.getTime();
     });
 
-    const positionToAddresses = new Map<string, string[]>();
-    for (const address of sortedAddresses) {
-      const position = geocodeMap.get(address);
-      if (position) {
-        const posKey = `${position[0]},${position[1]}`;
-        if (!positionToAddresses.has(posKey)) {
-          positionToAddresses.set(posKey, []);
-        }
-        positionToAddresses.get(posKey)!.push(address);
-      }
-    }
-
     const routePoints: RoutePoint[] = [];
     let markerCount = 0;
 
@@ -968,36 +860,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
       const position = geocodeMap.get(address);
       if (!position || !appts) continue;
 
-      const posKey = `${position[0]},${position[1]}`;
-      const addressesAtPosition = positionToAddresses.get(posKey) || [];
-      const indexInGroup = addressesAtPosition.indexOf(address);
-      const hasDuplicates = addressesAtPosition.length > 1;
-
       markerCount++;
-
-      let displayPosition = position;
-      const currentZoom = map.getCamera().zoom ?? 10;
-      displayPosition = offsetNearbyMarker(
-        position,
-        indexInGroup,
-        addressesAtPosition.length,
-        currentZoom
-      );
 
       const isFirstMarker = markerCount === 1;
 
       const marker = new atlas.HtmlMarker({
         color: isFirstMarker ? "#E53935" : "DodgerBlue",
         text: markerCount.toString(),
-        position: displayPosition,
+        position: position,
       });
-
 
       map.events.add("click", marker, () => {
         popup.close();
         popup.setOptions({
           content: createPopupContent(appts, address),
-          position: displayPosition,
+          position: position,
         });
         popup.open(map);
       });
@@ -1018,10 +895,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         scheduledstart: appts[0].scheduledstart,
       });
     }
-
-    console.log(
-      `[Markers] Created ${markerCount} markers for ${routePoints.length} locations`
-    );
 
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
       void calculateAndDisplayRoute(userLocation.position, routePoints);
@@ -1079,7 +952,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         setRouteData(cached.result);
         displayRouteOnMap(cached.result);
         setIsCalculatingRoute(false);
-        console.log("[Route] Using cached route result");
         return;
       }
 
@@ -1096,9 +968,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         routeCacheRef.current.set(cacheKey, { result, timestamp: Date.now() });
         setRouteData(result);
         displayRouteOnMap(result);
-        const distanceMiles = (result.totalDistance * 0.000621371).toFixed(1);
-        const duration = formatRouteDuration(result.totalDuration);
-        console.log(`[Route] Calculated: ${distanceMiles} mi, ${duration}`);
       } else {
         routeSourceRef.current.clear();
         setRouteData(null);
@@ -1143,6 +1012,16 @@ const MapComponent: React.FC<MapComponentProps> = ({
     onRouteToggle(newShowRoute);
   };
 
+  const handleDateBadgeClick = React.useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const target = e.target as HTMLElement;
+    if (!target.classList.contains('clear-date-btn') && 
+        !target.closest('.clear-date-btn')) {
+      setShowDatePicker(true);
+    }
+  }, []);
+
   return (
     <div className="appointment-azure-map-container">
       <div className="filter-controls-wrapper">
@@ -1173,16 +1052,32 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
             {currentFilter.dueFilter === "customDateRange" &&
               currentFilter.customDateRange && (
-                <div className="selected-date-badge">
-                  {formatSelectedDateRange()}
+                <div 
+                  className="selected-date-badge"
+                  onClick={handleDateBadgeClick}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setShowDatePicker(true);
+                    }
+                  }}
+                  title="Click to edit date range"
+                  aria-label="Edit date range"
+                >
+                  <span className="selected-date-text">
+                    {formatSelectedDateRange()}
+                  </span>
                   <button
                     className="clear-date-btn"
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       onFilterChange({
                         dueFilter: "today",
                         customDateRange: undefined,
-                      })
-                    }
+                      });
+                    }}
                     title="Clear date range"
                     aria-label="Clear date range"
                   >
