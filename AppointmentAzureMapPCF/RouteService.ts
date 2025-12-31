@@ -57,7 +57,7 @@ export class AzureMapsRouteService {
   private azureMapsKey: string;
   private readonly baseUrl = "https://atlas.microsoft.com/route/directions/json";
   private cache = new Map<string, CacheEntry>();
-  private readonly cacheTTL = 5 * 60 * 1000; // 5 minutes
+  private readonly cacheTTL = 5 * 60 * 1000;
   private apiCallCount = 0;
 
   constructor(azureMapsKey: string) {
@@ -79,7 +79,6 @@ export class AzureMapsRouteService {
     const cacheKey = this.generateCacheKey(startPosition, sortedPoints);
     const cached = this.getValidCacheEntry(cacheKey);
     if (cached) {
-      console.log(`Cache hit! Saved API call. Total calls: ${this.apiCallCount}`);
       return cached;
     }
 
@@ -95,11 +94,9 @@ export class AzureMapsRouteService {
       
       this.cache.set(cacheKey, { result, timestamp: Date.now() });
       this.apiCallCount++;
-      console.log(`API call made. Total calls: ${this.apiCallCount}`);
       
       return result;
     } catch (error) {
-      console.error("Route calculation failed:", error);
       return null;
     }
   }

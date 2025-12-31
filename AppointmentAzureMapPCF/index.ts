@@ -59,7 +59,6 @@ export class AppointmentAzureMapPCF
       this.getUserId(context);
 
       if (!this.currentUserId) {
-        console.error("[Initialization] ✗ No user ID available");
         this.isLoadingConfig = false;
         this.isLoadingAppointments = false;
         this.renderComponent();
@@ -74,8 +73,6 @@ export class AppointmentAzureMapPCF
       await this.fetchUserAppointments(context);
 
       this.applyFilters();
-    } catch (error) {
-      console.error("[Initialization] Error:", error);
     } finally {
       this.renderComponent();
     }
@@ -96,7 +93,7 @@ export class AppointmentAzureMapPCF
             const us = globalObj.Xrm.Utility.getGlobalContext().userSettings;
             if (us?.userId) userId = us.userId;
           }
-        } catch (xrmError) {
+        } catch {
           // Xrm not available
         }
       }
@@ -110,8 +107,7 @@ export class AppointmentAzureMapPCF
       } else {
         this.currentUserId = "";
       }
-    } catch (error) {
-      console.error("[User ID] Error:", error);
+    } catch {
       this.currentUserId = "";
     }
   }
@@ -128,8 +124,6 @@ export class AppointmentAzureMapPCF
       if (result.entities.length > 0) {
         this.azureMapsKey = result.entities[0].ti_azuremapskey ?? "";
       }
-    } catch (error) {
-      console.error("[Config] Azure Maps Key Error:", error);
     } finally {
       this.isLoadingConfig = false;
     }
@@ -151,25 +145,20 @@ export class AppointmentAzureMapPCF
         this.currentUserAddress = user.address1_composite ?? "";
         this.currentUserName = user.fullname ?? "Current User";
         return;
-      } catch (retrieveError) {
-        // retrieveRecord failed, try retrieveMultipleRecords
+      } catch {
+        // retrieveRecord failed
       }
 
-      try {
-        const result = await context.webAPI.retrieveMultipleRecords(
-          "systemuser",
-          `?$select=address1_composite,fullname&$filter=systemuserid eq ${this.currentUserId}&$top=1`
-        );
+      const result = await context.webAPI.retrieveMultipleRecords(
+        "systemuser",
+        `?$select=address1_composite,fullname&$filter=systemuserid eq ${this.currentUserId}&$top=1`
+      );
 
-        if (result.entities.length > 0) {
-          this.currentUserAddress = result.entities[0].address1_composite ?? "";
-          this.currentUserName = result.entities[0].fullname ?? "Current User";
-        }
-      } catch (multipleError) {
-        // retrieveMultipleRecords failed
+      if (result.entities.length > 0) {
+        this.currentUserAddress = result.entities[0].address1_composite ?? "";
+        this.currentUserName = result.entities[0].fullname ?? "Current User";
       }
-    } catch (error) {
-      console.error("[User Fetch] Unexpected error:", error);
+    } catch {
       this.currentUserAddress = "";
       this.currentUserName = "Current User";
     }
@@ -227,14 +216,11 @@ export class AppointmentAzureMapPCF
           ownerId: this.currentUserId,
         };
       });
-    } catch (error) {
-      console.error("[Appointments Fetch] Error:", error);
-      this.allAppointments = [];
     } finally {
       this.isLoadingAppointments = false;
     }
   }
-  
+
   private applyFilters(): void {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -245,37 +231,37 @@ export class AppointmentAzureMapPCF
 
     switch (this.currentFilter.dueFilter) {
       case "overdue":
-        filtered = filtered.filter((appt) => appt.scheduledstart < today);
+        filtered = filtered.filter((a) => a.scheduledstart < today);
         break;
       case "tomorrow":
         filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= tomorrow &&
-            appt.scheduledstart <
+          (a) =>
+            a.scheduledstart >= tomorrow &&
+            a.scheduledstart <
               new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)
         );
         break;
       case "next7days":
         filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= tomorrow &&
-            appt.scheduledstart <
+          (a) =>
+            a.scheduledstart >= tomorrow &&
+            a.scheduledstart <
               new Date(tomorrow.getTime() + 7 * 24 * 60 * 60 * 1000)
         );
         break;
       case "next30days":
         filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= tomorrow &&
-            appt.scheduledstart <
+          (a) =>
+            a.scheduledstart >= tomorrow &&
+            a.scheduledstart <
               new Date(tomorrow.getTime() + 30 * 24 * 60 * 60 * 1000)
         );
         break;
       case "next90days":
         filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= tomorrow &&
-            appt.scheduledstart <
+          (a) =>
+            a.scheduledstart >= tomorrow &&
+            a.scheduledstart <
               new Date(tomorrow.getTime() + 90 * 24 * 60 * 60 * 1000)
         );
         break;
@@ -283,7 +269,7 @@ export class AppointmentAzureMapPCF
         const d = new Date(tomorrow);
         d.setMonth(d.getMonth() + 6);
         filtered = filtered.filter(
-          (appt) => appt.scheduledstart >= tomorrow && appt.scheduledstart < d
+          (a) => a.scheduledstart >= tomorrow && a.scheduledstart < d
         );
         break;
       }
@@ -291,7 +277,7 @@ export class AppointmentAzureMapPCF
         const d = new Date(tomorrow);
         d.setMonth(d.getMonth() + 12);
         filtered = filtered.filter(
-          (appt) => appt.scheduledstart >= tomorrow && appt.scheduledstart < d
+          (a) => a.scheduledstart >= tomorrow && a.scheduledstart < d
         );
         break;
       }
@@ -299,24 +285,31 @@ export class AppointmentAzureMapPCF
         if (this.currentFilter.customDateRange) {
           const { startDate, endDate } = this.currentFilter.customDateRange;
 
-          const startYear = startDate.getUTCFullYear();
-          const startMonth = startDate.getUTCMonth();
-          const startDay = startDate.getUTCDate();
-          
-          const endYear = endDate.getUTCFullYear();
-          const endMonth = endDate.getUTCMonth();
-          const endDay = endDate.getUTCDate();
-          
-          const rangeStart = new Date(startYear, startMonth, startDay, 0, 0, 0, 0);
-          const rangeEnd = new Date(endYear, endMonth, endDay, 23, 59, 59, 999);
+          const rangeStart = new Date(
+            startDate.getUTCFullYear(),
+            startDate.getUTCMonth(),
+            startDate.getUTCDate(),
+            0,
+            0,
+            0,
+            0
+          );
 
-          console.log(`[Filter] Custom range: ${rangeStart.toLocaleString()} to ${rangeEnd.toLocaleString()}`);
+          const rangeEnd = new Date(
+            endDate.getUTCFullYear(),
+            endDate.getUTCMonth(),
+            endDate.getUTCDate(),
+            23,
+            59,
+            59,
+            999
+          );
 
-          filtered = filtered.filter((appt) => {
-            return appt.scheduledstart >= rangeStart && appt.scheduledstart <= rangeEnd;
-          });
-
-          console.log(`[Filter] Found ${filtered.length} of ${this.allAppointments.length} appointments`);
+          filtered = filtered.filter(
+            (a) =>
+              a.scheduledstart >= rangeStart &&
+              a.scheduledstart <= rangeEnd
+          );
         }
         break;
       }
@@ -325,9 +318,9 @@ export class AppointmentAzureMapPCF
       case "today":
       default:
         filtered = filtered.filter(
-          (appt) =>
-            appt.scheduledstart >= today &&
-            appt.scheduledstart <
+          (a) =>
+            a.scheduledstart >= today &&
+            a.scheduledstart <
               new Date(today.getTime() + 24 * 60 * 60 * 1000)
         );
         break;
@@ -359,9 +352,7 @@ export class AppointmentAzureMapPCF
     ]);
 
     this.applyFilters();
-
     this.refreshTrigger++;
-
     this.renderComponent();
   };
 
@@ -381,41 +372,7 @@ export class AppointmentAzureMapPCF
       return;
     }
 
-    if (!this.azureMapsKey) {
-      this.root.render(
-        React.createElement(
-          "div",
-          { style: { padding: "20px", textAlign: "center", color: "#d13438" } },
-          [
-            React.createElement("h3", { key: "t" }, "⚠️ Configuration Error"),
-            React.createElement(
-              "p",
-              { key: "m" },
-              "Azure Maps key not found in ti_mapconfiguration."
-            ),
-          ]
-        )
-      );
-      return;
-    }
-
-    if (!this.currentUserId) {
-      this.root.render(
-        React.createElement(
-          "div",
-          { style: { padding: "20px", textAlign: "center", color: "#d13438" } },
-          [
-            React.createElement("h3", { key: "t" }, "⚠️ User Context Error"),
-            React.createElement(
-              "p",
-              { key: "m" },
-              "Could not retrieve the current user ID."
-            ),
-          ]
-        )
-      );
-      return;
-    }
+    if (!this.azureMapsKey || !this.currentUserId) return;
 
     this.root.render(
       React.createElement(MapComponent, {
@@ -451,7 +408,7 @@ export class AppointmentAzureMapPCF
   }
 
   public destroy(): void {
-    if (this.root != null) {
+    if (this.root) {
       this.root.unmount();
       this.root = null;
     }

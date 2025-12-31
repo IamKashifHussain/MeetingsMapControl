@@ -29,11 +29,11 @@ interface MapComponentProps {
 
 type GeocodeCache = Record<string, atlas.data.Position | null>;
 
-interface MarkerInfo {
-  marker: atlas.HtmlMarker;
-  appointment: AppointmentRecord;
-  position: atlas.data.Position;
+interface AppointmentProperties {
+  appointments: AppointmentRecord[];
   address: string;
+  markerNumber: number;
+  isFirstMarker: boolean;
 }
 
 interface CachedRoute {
@@ -65,16 +65,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const mapInstanceRef = React.useRef<atlas.Map | null>(null);
   const popupRef = React.useRef<atlas.Popup | null>(null);
   const geocodeCacheRef = React.useRef<GeocodeCache>({});
-  const markersRef = React.useRef<MarkerInfo[]>([]);
   const userMarkerRef = React.useRef<atlas.HtmlMarker | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const routeLayerRef = React.useRef<atlas.layer.LineLayer | null>(null);
   const routeSourceRef = React.useRef<atlas.source.DataSource | null>(null);
   const routeServiceRef = React.useRef<AzureMapsRouteService | null>(null);
   const routeCacheRef = React.useRef<Map<string, CachedRoute>>(new Map());
+  const appointmentSourceRef = React.useRef<atlas.source.DataSource | null>(null);
+  const symbolLayerRef = React.useRef<atlas.layer.SymbolLayer | null>(null);
+  const clusterBubbleLayerRef = React.useRef<atlas.layer.BubbleLayer | null>(null);
+  const clusterSymbolLayerRef = React.useRef<atlas.layer.SymbolLayer | null>(null);
 
-  const ROUTE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-  const DISTANCE_THRESHOLD = 0.0001; // ~10 meters in degrees
+  const ROUTE_CACHE_DURATION = 5 * 60 * 1000;
+  const DISTANCE_THRESHOLD = 0.0001;
 
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
@@ -117,9 +120,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
         newStateCode !== AppointmentStatus.Completed &&
         newStateCode !== AppointmentStatus.Canceled
       ) {
-        console.warn(
-          `[Status Update] Invalid state transition attempted: ${newStateCode}`
-        );
         return;
       }
 
@@ -143,10 +143,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
           onRefresh();
         }, 500);
       } catch (error) {
-        console.error(
-          `[Status Update] ✗ Failed to close appointment ${appointmentId}:`,
-          error
-        );
         alert("Failed to close appointment. Please try again.");
       } finally {
         setUpdatingAppointments((prev) => {
@@ -184,7 +180,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const openBingMapDirections = React.useCallback(
     (destinationAddress: string, appointmentSubject: string) => {
       if (!destinationAddress || destinationAddress.trim() === "") {
-        console.warn("[Directions] No destination address available");
         alert("No address available");
         return;
       }
@@ -196,12 +191,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
         const newWindow = window.open(bingMapsUrl, "_blank");
 
         if (newWindow === null) {
-          console.error("[Directions] Pop-up was blocked by browser");
           alert("Pop-up blocked! Please allow pop-ups for this site.");
         }
       } catch (error) {
-        console.error("[Directions] Error opening Bing Maps:", error);
-        alert("Error opening Bing Maps. Check console for details.");
+        alert("Error opening Bing Maps.");
       }
     },
     []
@@ -300,11 +293,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       userMarkerRef.current = null;
     }
 
-    if (markersRef.current.length > 0 && mapInstanceRef.current) {
-      markersRef.current.forEach((m) => {
-        mapInstanceRef.current?.markers.remove(m.marker);
-      });
-      markersRef.current = [];
+    if (appointmentSourceRef.current) {
+      appointmentSourceRef.current.clear();
     }
 
     if (routeSourceRef.current) {
@@ -352,13 +342,136 @@ const MapComponent: React.FC<MapComponentProps> = ({
         routeSourceRef.current = routeSource;
 
         const routeLayer = new atlas.layer.LineLayer(routeSource, undefined, {
-          strokeColor: "rgba(79, 172, 254, 0.8)",
-          strokeWidth: 3,
+          strokeColor: "#2272B9",
+          strokeWidth: 5,
           lineJoin: "round",
           lineCap: "round",
         });
         map.layers.add(routeLayer);
         routeLayerRef.current = routeLayer;
+
+        const appointmentSource = new atlas.source.DataSource(undefined, {
+          cluster: true,
+          clusterRadius: 50,
+          clusterMaxZoom: 14,
+          clusterProperties: {
+            hasFirstMarker: ["any", ["get", "isFirstMarker"]]
+          }
+        });
+        map.sources.add(appointmentSource);
+        appointmentSourceRef.current = appointmentSource;
+
+        const clusterBubbleLayer = new atlas.layer.BubbleLayer(
+          appointmentSource,
+          undefined,
+          {
+            radius: [
+              "step",
+              ["get", "point_count"],
+              20,
+              5, 25,
+              10, 30
+            ],
+            color: [
+              "case",
+              ["get", "hasFirstMarker"],
+              "#E53935",
+              [
+                "step",
+                ["get", "point_count"],
+                "#4FC2F6",
+                5, "#3FA9D9",
+                10, "#2E8AB8"
+              ]
+            ],
+            strokeWidth: 0,
+            filter: ["has", "point_count"],
+          }
+        );
+        map.layers.add(clusterBubbleLayer);
+        clusterBubbleLayerRef.current = clusterBubbleLayer;
+
+        const clusterSymbolLayer = new atlas.layer.SymbolLayer(
+          appointmentSource,
+          undefined,
+          {
+            iconOptions: {
+              image: "none",
+            },
+            textOptions: {
+              textField: ["get", "point_count_abbreviated"],
+              offset: [0, 0],
+              color: "#FFFFFF",
+              size: 14,
+              font: ["SegoeUi-Bold"],
+            },
+            filter: ["has", "point_count"],
+          }
+        );
+        map.layers.add(clusterSymbolLayer);
+        clusterSymbolLayerRef.current = clusterSymbolLayer;
+
+        const symbolLayer = new atlas.layer.SymbolLayer(
+          appointmentSource,
+          undefined,
+          {
+            iconOptions: {
+              image: [
+                "case",
+                ["get", "isFirstMarker"],
+                "marker-red",
+                "marker-blue"
+              ],
+              allowOverlap: true,
+              anchor: "bottom",
+              size: 1.0,
+            },
+            textOptions: {
+              textField: ["to-string", ["get", "markerNumber"]],
+              offset: [0, -1.6],
+              color: "#FFFFFF",
+              size: 12,
+              font: ["SegoeUi-Bold"],
+              allowOverlap: true,
+            },
+            filter: ["!", ["has", "point_count"]],
+          }
+        );
+        map.layers.add(symbolLayer);
+        symbolLayerRef.current = symbolLayer;
+
+        map.events.add("click", (e) => {
+          const features = map.layers.getRenderedShapes(e.position, [
+            clusterBubbleLayer,
+            clusterSymbolLayer,
+            symbolLayer
+          ]);
+
+          if (features.length > 0) {
+            const feature = features[0] as atlas.Shape;
+            const properties = feature.getProperties();
+
+            if (properties.cluster === true || properties.point_count) {
+              onClusterClick(e);
+            } else if (properties.appointments) {
+              onAppointmentClick(e);
+            }
+          }
+        });
+
+        map.events.add("mousemove", (e) => {
+          const features = map.layers.getRenderedShapes(e.position, [
+            clusterBubbleLayer,
+            clusterSymbolLayer,
+            symbolLayer
+          ]);
+
+          if (features.length > 0) {
+            map.getCanvasContainer().style.cursor = "pointer";
+          } else {
+            map.getCanvasContainer().style.cursor = "grab";
+          }
+        });
 
         map.controls.add(
           [
@@ -384,17 +497,78 @@ const MapComponent: React.FC<MapComponentProps> = ({
       });
 
       map.events.add("error", (error) => {
-        console.error("[Map] Error event:", error);
-        if (markersRef.current.length === 0) {
+        if (appointmentSourceRef.current?.getShapes().length === 0) {
           setErrorMessage("Failed to load map");
         }
         setIsLoading(false);
       });
     } catch (error) {
-      console.error("[Map] Initialization error:", error);
       setErrorMessage("Failed to initialize map");
       setIsLoading(false);
     }
+  };
+
+  const onClusterClick = (e: atlas.MapMouseEvent) => {
+    if (!appointmentSourceRef.current || !mapInstanceRef.current) return;
+
+    const features = mapInstanceRef.current.layers.getRenderedShapes(e.position, [
+      clusterBubbleLayerRef.current!,
+      clusterSymbolLayerRef.current!
+    ]);
+
+    if (features.length === 0) return;
+
+    const cluster = features[0] as atlas.Shape;
+    const properties = cluster.getProperties();
+    
+    if (!properties.cluster_id && !properties.point_count) {
+      return;
+    }
+
+    const clusterId = properties.cluster_id;
+    const clusterPosition = cluster.getCoordinates() as atlas.data.Position;
+
+    void appointmentSourceRef.current
+      .getClusterExpansionZoom(clusterId)
+      .then((zoom) => {
+        mapInstanceRef.current?.setCamera({
+          center: clusterPosition,
+          zoom: zoom,
+          type: "ease",
+          duration: 300,
+        });
+        return undefined;
+      })
+      .catch((error) => {
+        const currentZoom = mapInstanceRef.current?.getCamera().zoom || 4;
+        mapInstanceRef.current?.setCamera({
+          center: clusterPosition,
+          zoom: currentZoom + 2,
+          type: "ease",
+          duration: 300,
+        });
+      });
+  };
+
+  const onAppointmentClick = (e: atlas.MapMouseEvent) => {
+    if (!popupRef.current || !mapInstanceRef.current || !symbolLayerRef.current) return;
+
+    const features = mapInstanceRef.current.layers.getRenderedShapes(e.position, [
+      symbolLayerRef.current
+    ]);
+
+    if (features.length === 0) return;
+
+    const shape = features[0] as atlas.Shape;
+    const properties = shape.getProperties() as AppointmentProperties;
+    const position = shape.getCoordinates() as atlas.data.Position;
+
+    popupRef.current.close();
+    popupRef.current.setOptions({
+      content: createPopupContent(properties.appointments, properties.address),
+      position: position,
+    });
+    popupRef.current.open(mapInstanceRef.current);
   };
 
   const geocodeAddress = async (
@@ -438,41 +612,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }
 
       geocodeCacheRef.current[normalizedAddress] = null;
-      console.warn(`[Geocode] No results for: ${address}`);
       return null;
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
-        console.error("[Geocode] Error geocoding address:", address, error);
         geocodeCacheRef.current[normalizedAddress] = null;
       }
       return null;
     }
-  };
-
-  const batchGeocodeAddresses = async (
-    addresses: string[]
-  ): Promise<Map<string, atlas.data.Position | null>> => {
-    const results = new Map<string, atlas.data.Position | null>();
-    const batchSize = 10;
-    const delayMs = 50;
-
-    for (let i = 0; i < addresses.length; i += batchSize) {
-      if (abortControllerRef.current?.signal.aborted) break;
-      const batch = addresses.slice(i, i + batchSize);
-
-      await Promise.all(
-        batch.map(async (address) => {
-          const position = await geocodeAddress(address);
-          results.set(address, position);
-        })
-      );
-
-      if (i + batchSize < addresses.length) {
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
-    }
-
-    return results;
   };
 
   const geocodeAndDisplayUserLocation = async () => {
@@ -509,7 +655,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
       map.markers.add(userMarker);
       userMarkerRef.current = userMarker;
     } else {
-      console.warn("[User Location] Failed to geocode user address");
       setUserLocation(null);
       setErrorMessage(
         `Unable to locate your address: "${currentUserAddress}". Please update your address in the system user settings.`
@@ -565,7 +710,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
       return null;
     } catch (error) {
-      console.error("[Fetch Address] Error fetching regarding address:", error);
       return null;
     }
   };
@@ -747,7 +891,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const fitMapToMarkers = () => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map || !appointmentSourceRef.current) return;
 
     const positions: atlas.data.Position[] = [];
 
@@ -755,8 +899,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
       positions.push(userLocation.position);
     }
 
-    markersRef.current.forEach((markerInfo) => {
-      positions.push(markerInfo.position);
+    const shapes = appointmentSourceRef.current.getShapes();
+    shapes.forEach((shape) => {
+      const coords = shape.getCoordinates();
+      if (coords) {
+        positions.push(coords as atlas.data.Position);
+      }
     });
 
     if (positions.length > 0) {
@@ -773,7 +921,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const updateMarkers = async () => {
     const map = mapInstanceRef.current;
     const popup = popupRef.current;
-    if (!map || !popup) return;
+    if (!map || !popup || !appointmentSourceRef.current) return;
 
     if (!userLocation?.position) {
       return;
@@ -781,10 +929,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     popup.close();
 
-    markersRef.current.forEach((m) => {
-      map.markers.remove(m.marker);
-    });
-    markersRef.current = [];
+    appointmentSourceRef.current.clear();
 
     if (routeSourceRef.current) routeSourceRef.current.clear();
     setRouteData(null);
@@ -853,6 +998,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     });
 
     const routePoints: RoutePoint[] = [];
+    const features: atlas.data.Feature<atlas.data.Point, AppointmentProperties>[] = [];
     let markerCount = 0;
 
     for (const address of sortedAddresses) {
@@ -861,31 +1007,19 @@ const MapComponent: React.FC<MapComponentProps> = ({
       if (!position || !appts) continue;
 
       markerCount++;
-
       const isFirstMarker = markerCount === 1;
 
-      const marker = new atlas.HtmlMarker({
-        color: isFirstMarker ? "#E53935" : "DodgerBlue",
-        text: markerCount.toString(),
-        position: position,
-      });
+      const feature = new atlas.data.Feature(
+        new atlas.data.Point(position),
+        {
+          appointments: appts,
+          address: address,
+          markerNumber: markerCount,
+          isFirstMarker: isFirstMarker,
+        }
+      );
 
-      map.events.add("click", marker, () => {
-        popup.close();
-        popup.setOptions({
-          content: createPopupContent(appts, address),
-          position: position,
-        });
-        popup.open(map);
-      });
-
-      map.markers.add(marker);
-      markersRef.current.push({
-        marker,
-        appointment: appts[0],
-        position,
-        address,
-      });
+      features.push(feature);
 
       routePoints.push({
         position,
@@ -895,6 +1029,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         scheduledstart: appts[0].scheduledstart,
       });
     }
+
+    appointmentSourceRef.current.add(features);
 
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
       void calculateAndDisplayRoute(userLocation.position, routePoints);
@@ -933,9 +1069,6 @@ const MapComponent: React.FC<MapComponentProps> = ({
     );
 
     if (filteredPoints.length === 0) {
-      console.warn(
-        "[Route] All appointments are at user location, skipping route calculation"
-      );
       setRouteData(null);
       setIsCalculatingRoute(false);
       return;
@@ -971,10 +1104,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
       } else {
         routeSourceRef.current.clear();
         setRouteData(null);
-        console.warn("[Route] No route data returned from API");
       }
     } catch (error) {
-      console.error("[Route] Failed to calculate route:", error);
       routeSourceRef.current.clear();
       setRouteData(null);
     } finally {
