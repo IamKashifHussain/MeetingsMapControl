@@ -343,7 +343,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
         const routeLayer = new atlas.layer.LineLayer(routeSource, undefined, {
           strokeColor: "#2272B9",
-          strokeWidth: 5,
+          strokeWidth: 4,
           lineJoin: "round",
           lineCap: "round",
         });
@@ -427,7 +427,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               size: 1.0,
             },
             textOptions: {
-              textField: ["to-string", ["get", "markerNumber"]],
+              textField: ["to-string", ["coalesce", ["get", "markerNumber"], 0]],
               offset: [0, -1.6],
               color: "#FFFFFF",
               size: 12,
@@ -441,19 +441,32 @@ const MapComponent: React.FC<MapComponentProps> = ({
         symbolLayerRef.current = symbolLayer;
 
         map.events.add("click", (e) => {
-          const features = map.layers.getRenderedShapes(e.position, [
+          const clusterFeatures = map.layers.getRenderedShapes(e.position, [
             clusterBubbleLayer,
-            clusterSymbolLayer,
+            clusterSymbolLayer
+          ]);
+
+          if (clusterFeatures.length > 0) {
+            const feature = clusterFeatures[0];
+            const properties = (feature as unknown as { properties?: Record<string, unknown> }).properties;
+
+            if (properties?.point_count) {
+              onClusterClick(e);
+              return;
+            }
+          }
+
+          const appointmentFeatures = map.layers.getRenderedShapes(e.position, [
             symbolLayer
           ]);
 
-          if (features.length > 0) {
-            const feature = features[0] as atlas.Shape;
-            const properties = feature.getProperties();
+          if (appointmentFeatures.length > 0) {
+            const feature = appointmentFeatures[0];
+            const shapeData = (feature as unknown as { data?: unknown }).data;
+            const geoJsonFeature = shapeData as { properties?: AppointmentProperties };
+            const properties = geoJsonFeature.properties;
 
-            if (properties.cluster === true || properties.point_count) {
-              onClusterClick(e);
-            } else if (properties.appointments) {
+            if (properties?.appointments) {
               onAppointmentClick(e);
             }
           }
@@ -509,45 +522,69 @@ const MapComponent: React.FC<MapComponentProps> = ({
   };
 
   const onClusterClick = (e: atlas.MapMouseEvent) => {
-    if (!appointmentSourceRef.current || !mapInstanceRef.current) return;
+    if (!appointmentSourceRef.current || !mapInstanceRef.current) {
+      return;
+    }
 
     const features = mapInstanceRef.current.layers.getRenderedShapes(e.position, [
       clusterBubbleLayerRef.current!,
       clusterSymbolLayerRef.current!
     ]);
 
-    if (features.length === 0) return;
+    if (features.length === 0) {
+      return;
+    }
 
-    const cluster = features[0] as atlas.Shape;
-    const properties = cluster.getProperties();
-    
-    if (!properties.cluster_id && !properties.point_count) {
+    const feature = features[0];
+    const geoJsonFeature = feature as unknown as {
+      properties?: Record<string, unknown>,
+      geometry?: { coordinates?: atlas.data.Position }
+    };
+    const properties = geoJsonFeature.properties;
+
+    if (!properties?.point_count) {
       return;
     }
 
     const clusterId = properties.cluster_id;
-    const clusterPosition = cluster.getCoordinates() as atlas.data.Position;
+    const clusterPosition: atlas.data.Position = geoJsonFeature.geometry?.coordinates as atlas.data.Position;
 
-    void appointmentSourceRef.current
-      .getClusterExpansionZoom(clusterId)
-      .then((zoom) => {
-        mapInstanceRef.current?.setCamera({
-          center: clusterPosition,
-          zoom: zoom,
-          type: "ease",
-          duration: 300,
+    if (clusterId && appointmentSourceRef.current) {
+      appointmentSourceRef.current
+        .getClusterExpansionZoom(clusterId as number)
+        .then((zoom) => {
+          const currentZoom = mapInstanceRef.current?.getCamera().zoom || 4;
+          const targetZoom = Math.max(zoom, currentZoom + 1);
+
+          mapInstanceRef.current?.setCamera({
+            center: clusterPosition,
+            zoom: targetZoom,
+            type: "ease",
+            duration: 300,
+          });
+
+          return undefined;
+        })
+        .catch(() => {
+          const currentZoom = mapInstanceRef.current?.getCamera().zoom || 4;
+          const targetZoom = currentZoom + 2;
+          mapInstanceRef.current?.setCamera({
+            center: clusterPosition,
+            zoom: targetZoom,
+            type: "ease",
+            duration: 300,
+          });
         });
-        return undefined;
-      })
-      .catch((error) => {
-        const currentZoom = mapInstanceRef.current?.getCamera().zoom || 4;
-        mapInstanceRef.current?.setCamera({
-          center: clusterPosition,
-          zoom: currentZoom + 2,
-          type: "ease",
-          duration: 300,
-        });
+    } else {
+      const currentZoom = mapInstanceRef.current?.getCamera().zoom || 4;
+      const targetZoom = currentZoom + 2;
+      mapInstanceRef.current?.setCamera({
+        center: clusterPosition,
+        zoom: targetZoom,
+        type: "ease",
+        duration: 300,
       });
+    }
   };
 
   const onAppointmentClick = (e: atlas.MapMouseEvent) => {
@@ -559,9 +596,13 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     if (features.length === 0) return;
 
-    const shape = features[0] as atlas.Shape;
-    const properties = shape.getProperties() as AppointmentProperties;
-    const position = shape.getCoordinates() as atlas.data.Position;
+    const feature = features[0];
+    const shapeData = (feature as unknown as { data?: unknown }).data;
+    const geoJsonFeature = shapeData as { properties?: AppointmentProperties, geometry?: { coordinates?: atlas.data.Position } };
+    const properties = geoJsonFeature.properties;
+    const position: atlas.data.Position = geoJsonFeature.geometry?.coordinates as atlas.data.Position;
+
+    if (!properties) return;
 
     popupRef.current.close();
     popupRef.current.setOptions({
@@ -639,8 +680,11 @@ const MapComponent: React.FC<MapComponentProps> = ({
       setUserLocation(newUserLocation);
 
       const userMarker = new atlas.HtmlMarker({
-        color: "red",
         position,
+        htmlContent: `
+    <div class="user-location-ring"></div>
+  `,
+        anchor: "center",
       });
 
       map.events.add("click", userMarker, () => {
@@ -812,16 +856,18 @@ const MapComponent: React.FC<MapComponentProps> = ({
     address: string
   ): string => {
     if (appts.length === 0) return "<div>No appointment data</div>";
+
     const isSingleAppointment = appts.length === 1;
 
     return `
-      <div class="appointment-popup-container">
-        ${!isSingleAppointment
+    <div class="appointment-popup-container">
+      ${!isSingleAppointment
         ? `<div class="appointment-popup-badge">📌 ${appts.length} appointments at this location</div>`
         : ""
       }
-        <div class="appointment-popup-list">
-          ${appts
+
+      <div class="appointment-popup-list">
+        ${appts
         .map((appt, index) => {
           const startTime = formatDateTime(appt.scheduledstart);
           const endTime = formatDateTime(appt.scheduledend);
@@ -833,60 +879,87 @@ const MapComponent: React.FC<MapComponentProps> = ({
           const isUpdating = updatingAppointments.has(appt.id);
 
           return `
-                <div class="appointment-popup-item ${index > 0 ? "appointment-popup-item-separator" : ""
+              <div class="appointment-popup-item ${index > 0 ? "appointment-popup-item-separator" : ""
             }">
-                  <h4 class="appointment-popup-subject">${escapeHtml(
-              appt.subject
-            )}</h4>
-                  <div class="appointment-popup-details">
-                    <div class="appointment-popup-detail-row">
-                      <span class="appointment-popup-detail-icon">📅</span>
-                      <span class="appointment-popup-detail-text">${escapeHtml(
-              startTime
-            )}</span>
-                    </div>
-                    <div class="appointment-popup-detail-row">
-                      <span class="appointment-popup-detail-icon">🕐</span>
-                      <span class="appointment-popup-detail-text">${escapeHtml(
-              endTime
-            )}</span>
-                    </div>
-                    <div class="appointment-popup-detail-row">
-                      <span class="appointment-popup-detail-icon">⏱️</span>
-                      <span class="appointment-popup-detail-text">${duration}</span>
-                    </div>
+                <h4 class="appointment-popup-subject">
+                  ${escapeHtml(appt.subject)}
+                </h4>
+
+                <div class="appointment-popup-details">
+                  <div class="appointment-popup-detail-row">
+                    <span class="appointment-popup-detail-icon">📅</span>
+                    <span class="appointment-popup-detail-text">
+                      ${escapeHtml(startTime)}
+                    </span>
                   </div>
+
+                  <div class="appointment-popup-detail-row">
+                    <span class="appointment-popup-detail-icon">🕐</span>
+                    <span class="appointment-popup-detail-text">
+                      ${escapeHtml(endTime)}
+                    </span>
+                  </div>
+
+                  <div class="appointment-popup-detail-row">
+                    <span class="appointment-popup-detail-icon">⏱️</span>
+                    <span class="appointment-popup-detail-text">
+                      ${duration}
+                    </span>
+                  </div>
+
                   ${regarding
-              ? `<div class="appointment-popup-regarding"><span class="appointment-popup-regarding-label">👤 Regarding:</span><div class="appointment-popup-regarding-value">${escapeHtml(
-                regarding
-              )}</div></div>`
+              ? `
+                        <div class="appointment-popup-detail-row">
+                          <span class="appointment-popup-detail-icon">👤</span>
+                          <span class="appointment-popup-detail-text appointment-popup-regarding-text">
+                            ${escapeHtml(regarding)}
+                          </span>
+                        </div>
+                      `
               : ""
             }
-                  <div class="appointment-popup-actions">
-                    <button 
-                      class="appointment-popup-directions-btn" 
-                      data-address="${escapeHtml(address)}" 
-                      data-subject="${escapeHtml(appt.subject)}"
-                      ${isUpdating ? "disabled" : ""}
-                    >
-                      Get Directions
-                    </button>
-                    <button 
-                      class="appointment-popup-close-btn" 
-                      data-appointment-id="${escapeHtml(appt.id)}" 
-                      data-appointment-subject="${escapeHtml(appt.subject)}"
-                      ${isUpdating ? "disabled" : ""}
-                    >
-                      ${isUpdating ? "⏳ Updating..." : "✕ Close Meeting"}
-                    </button>
-                  </div>
                 </div>
-              `;
+
+                ${address
+              ? `
+                      <div class="appointment-popup-address-container">
+                        <span
+                          class="appointment-popup-address-text"
+                          title="${escapeHtml(address)}"
+                        >
+                          ${escapeHtml(address)}
+                        </span>
+                      </div>
+                    `
+              : ""
+            }
+
+                <div class="appointment-popup-actions">
+                  <button
+                    class="appointment-popup-directions-btn"
+                    data-address="${escapeHtml(address)}"
+                    data-subject="${escapeHtml(appt.subject)}"
+                    ${isUpdating ? "disabled" : ""}
+                  >
+                    Get Directions
+                  </button>
+
+                  <button
+                    class="appointment-popup-close-btn"
+                    data-appointment-id="${escapeHtml(appt.id)}"
+                    data-appointment-subject="${escapeHtml(appt.subject)}"
+                    ${isUpdating ? "disabled" : ""}
+                  >
+                    ${isUpdating ? "⏳ Updating..." : "✕ Close Meeting"}
+                  </button>
+                </div>
+              </div>
+            `;
         })
         .join("")}
-        </div>
       </div>
-    `;
+    </div>
+  `;
   };
 
   const fitMapToMarkers = () => {
@@ -1145,10 +1218,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const handleDateBadgeClick = React.useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     const target = e.target as HTMLElement;
-    if (!target.classList.contains('clear-date-btn') && 
-        !target.closest('.clear-date-btn')) {
+    if (!target.classList.contains('clear-date-btn') &&
+      !target.closest('.clear-date-btn')) {
       setShowDatePicker(true);
     }
   }, []);
@@ -1183,7 +1256,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
             {currentFilter.dueFilter === "customDateRange" &&
               currentFilter.customDateRange && (
-                <div 
+                <div
                   className="selected-date-badge"
                   onClick={handleDateBadgeClick}
                   role="button"

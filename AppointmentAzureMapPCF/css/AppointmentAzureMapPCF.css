@@ -661,6 +661,44 @@
   text-overflow: ellipsis;
 }
 
+.appointment-popup-subject {
+  margin: 0;
+  padding: 0;
+  font-size: clamp(12px, 2vw, 15px);
+  font-weight: 700;
+  color: #212529;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.appointment-popup-address-container {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1vw, 8px);
+  background: #fff8e1;
+  border-left: 3px solid #ffc107;
+  padding: clamp(6px, 1vw, 8px) clamp(8px, 1vw, 10px);
+  border-radius: 4px;
+  margin-top: clamp(8px, 1.5vw, 12px);
+  margin-bottom: clamp(4px, 0.8vw, 6px);
+  min-width: 0;
+}
+
+.appointment-popup-address-text {
+  flex: 1;
+  font-size: clamp(10px, 1.5vw, 13px);
+  color: #212529;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
 .appointment-popup-description {
   font-size: clamp(11px, 1.8vw, 13px);
   color: #495057;
@@ -676,6 +714,18 @@
   text-overflow: ellipsis;
   word-break: break-word;
 }
+
+/* ===== User Location – Minimal Ring ===== */
+.user-location-ring {
+  width: 22px;
+  height: 22px;
+  background: #ffffff;
+  border: 3px solid #e53935;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
 
 .atlas-html-marker {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1062,9 +1112,10 @@
 }
 
 .appointment-popup-directions-btn {
-  width: 100%;
+  width: auto; /* Changed from 100% */
+  flex: 1; /* Added to share space equally */
   padding: clamp(10px, 2vw, 12px) clamp(14px, 2.5vw, 18px);
-  margin-top: clamp(10px, 2vw, 14px);
+  margin-top: 0; /* Remove individual margin since container has margin-top */
   font-size: clamp(12px, 2vw, 14px);
   font-weight: 400;
   background: #ffffff;
@@ -1075,12 +1126,12 @@
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center; /* Changed from flex-start to center */
   gap: clamp(8px, 1.5vw, 10px);
   white-space: nowrap;
   box-sizing: border-box;
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
-  text-align: left;
+  text-align: center;
   box-shadow: none;
 }
 
@@ -1142,13 +1193,16 @@
 
 .appointment-popup-actions {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .appointment-popup-close-btn {
-  width: 100%;
+  width: auto; /* Changed from 100% */
+  flex: 1; /* Added to share space equally */
   padding: 10px 16px;
   background: white;
   color: #323130;
