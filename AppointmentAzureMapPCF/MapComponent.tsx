@@ -10,7 +10,7 @@ import {
   UserLocation,
   DateRange,
 } from "./types";
-import { AzureMapsRouteService, RoutePoint, RouteResult } from "./RouteService";
+import { AzureMapsRouteService, RoutePoint, RouteResult, RouteLeg } from "./RouteService";
 import DatePicker from "./components/Datepicker";
 
 interface MapComponentProps {
@@ -34,6 +34,10 @@ interface AppointmentProperties {
   address: string;
   markerNumber: number;
   isFirstMarker: boolean;
+  routeLegDistance?: number;
+  routeLegDuration?: number;
+  routeLegFrom?: string;
+  routeLegTo?: string;
 }
 
 interface CachedRoute {
@@ -75,6 +79,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const symbolLayerRef = React.useRef<atlas.layer.SymbolLayer | null>(null);
   const clusterBubbleLayerRef = React.useRef<atlas.layer.BubbleLayer | null>(null);
   const clusterSymbolLayerRef = React.useRef<atlas.layer.SymbolLayer | null>(null);
+  const showRouteRef = React.useRef<boolean>(showRoute);
 
   const ROUTE_CACHE_DURATION = 5 * 60 * 1000;
   const DISTANCE_THRESHOLD = 0.0001;
@@ -97,6 +102,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [selectedStatus, setSelectedStatus] = React.useState<number>(
     AppointmentStatus.Completed
   );
+
+  React.useEffect(() => {
+    showRouteRef.current = showRoute;
+  }, [showRoute]);
 
   const calculateDistance = (
     pos1: atlas.data.Position,
@@ -427,7 +436,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
               size: 1.0,
             },
             textOptions: {
-              textField: ["to-string", ["coalesce", ["get", "markerNumber"], 0]],
+              textField: ["to-string", ["get", "markerNumber"]],
               offset: [0, -1.6],
               color: "#FFFFFF",
               size: 12,
@@ -606,7 +615,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     popupRef.current.close();
     popupRef.current.setOptions({
-      content: createPopupContent(properties.appointments, properties.address),
+      content: createPopupContent(
+        properties.appointments,
+        properties.address,
+        properties.routeLegDistance,
+        properties.routeLegDuration,
+        properties.routeLegFrom,
+        properties.markerNumber,
+        showRouteRef.current
+      ),
       position: position,
     });
     popupRef.current.open(mapInstanceRef.current);
@@ -853,11 +870,31 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
   const createPopupContent = (
     appts: AppointmentRecord[],
-    address: string
+    address: string,
+    routeLegDistance?: number,
+    routeLegDuration?: number,
+    routeLegFrom?: string,
+    stopNumber?: number,
+    isRouteVisible?: boolean
   ): string => {
     if (appts.length === 0) return "<div>No appointment data</div>";
 
     const isSingleAppointment = appts.length === 1;
+    const routeInfoHtml = routeLegDistance != null && routeLegDuration != null && isRouteVisible ? `
+      <div class="route-info-container">
+        <div class="route-info-stats">
+          <div class="route-info-stat">
+            <span>${!isNaN(Number(routeLegDistance)) ? (Number(routeLegDistance) * 0.000621371).toFixed(1) : '?'} mi</span>
+          </div>
+          <div class="route-info-stat">
+            <span>${!isNaN(Number(routeLegDuration)) ? formatRouteDuration(Number(routeLegDuration)) : '?'}</span>
+          </div>
+        </div>
+        <div class="route-info-from">
+          From: ${escapeHtml(routeLegFrom || 'Unknown')}
+        </div>
+      </div>
+    ` : '';
 
     return `
     <div class="appointment-popup-container">
@@ -865,6 +902,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         ? `<div class="appointment-popup-badge">📌 ${appts.length} appointments at this location</div>`
         : ""
       }
+
+      ${routeInfoHtml}
 
       <div class="appointment-popup-list">
         ${appts
@@ -1106,7 +1145,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     appointmentSourceRef.current.add(features);
 
     if (showRoute && routePoints.length > 0 && userLocation?.position) {
-      void calculateAndDisplayRoute(userLocation.position, routePoints);
+      await calculateAndDisplayRoute(userLocation.position, routePoints);
     } else if (!showRoute && routeSourceRef.current) {
       routeSourceRef.current.clear();
       setRouteData(null);
@@ -1135,7 +1174,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
     startPosition: atlas.data.Position,
     routePoints: RoutePoint[]
   ) => {
-    if (!routeServiceRef.current || !routeSourceRef.current) return;
+    if (!routeServiceRef.current || !routeSourceRef.current || !appointmentSourceRef.current) return;
 
     const filteredPoints = routePoints.filter(
       (point) => !positionsAreEqual(point.position, startPosition)
@@ -1154,26 +1193,68 @@ const MapComponent: React.FC<MapComponentProps> = ({
     try {
       const cacheKey = getCacheKey(startPosition, filteredPoints);
       const cached = routeCacheRef.current.get(cacheKey);
-      if (cached && Date.now() - cached.timestamp < ROUTE_CACHE_DURATION) {
-        setRouteData(cached.result);
-        displayRouteOnMap(cached.result);
-        setIsCalculatingRoute(false);
-        return;
-      }
 
-      const result = await routeServiceRef.current.calculateChronologicalRoute(
-        startPosition,
-        filteredPoints
-      );
+      let result: RouteResult | null = null;
+
+      if (cached && Date.now() - cached.timestamp < ROUTE_CACHE_DURATION) {
+        result = cached.result;
+      } else {
+        result = await routeServiceRef.current.calculateChronologicalRoute(
+          startPosition,
+          filteredPoints
+        );
+
+        if (result) {
+          routeCacheRef.current.set(cacheKey, { result, timestamp: Date.now() });
+        }
+      }
 
       if (
         result &&
         result.routeCoordinates &&
         result.routeCoordinates.length > 0
       ) {
-        routeCacheRef.current.set(cacheKey, { result, timestamp: Date.now() });
         setRouteData(result);
         displayRouteOnMap(result);
+        const shapes = appointmentSourceRef.current.getShapes();
+        const updatedFeatures: atlas.data.Feature<atlas.data.Point, AppointmentProperties>[] = [];
+
+        shapes.forEach((shape) => {
+          const coords = shape.getCoordinates();
+
+          const feature = shape.toJson() as GeoJSON.Feature<GeoJSON.Point, AppointmentProperties>;
+          const props = feature.properties;
+
+          if (coords && props && props.markerNumber) {
+            const routeLegIndex = props.markerNumber - 1;
+
+            if (routeLegIndex >= 0 && routeLegIndex < result!.routeLegs.length) {
+              const routeLegData = result!.routeLegs[routeLegIndex];
+
+              const updatedFeature = new atlas.data.Feature(
+                new atlas.data.Point(coords as atlas.data.Position),
+                {
+                  ...props,
+                  routeLegDistance: routeLegData.distance,
+                  routeLegDuration: routeLegData.duration,
+                  routeLegFrom: routeLegData.from,
+                  routeLegTo: routeLegData.to
+                }
+              );
+              updatedFeatures.push(updatedFeature);
+            } else {
+              updatedFeatures.push(new atlas.data.Feature(
+                new atlas.data.Point(coords as atlas.data.Position),
+                props
+              ));
+            }
+          }
+        });
+
+        if (updatedFeatures.length > 0) {
+          appointmentSourceRef.current.clear();
+          appointmentSourceRef.current.add(updatedFeatures);
+        }
       } else {
         routeSourceRef.current.clear();
         setRouteData(null);

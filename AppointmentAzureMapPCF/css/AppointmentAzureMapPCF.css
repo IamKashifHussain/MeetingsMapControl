@@ -142,7 +142,7 @@
 .filter-section,
 .filter-due-section {
   flex: 0 0 auto;
-  margin : 0;
+  margin: 0;
   padding: 0;
   min-width: clamp(130px, 22vw, 200px);
   position: relative;
@@ -686,7 +686,7 @@
   display: block;
   overflow-wrap: break-word;
   word-wrap: break-word;
-  word-break: break-word;  
+  word-break: break-word;
   font-size: 13px;
   line-height: 1.4;
   color: #333;
@@ -700,7 +700,7 @@
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
-  
+
   font-size: 13px;
   line-height: 1.4;
   color: #555;
@@ -718,12 +718,12 @@
     margin-top: 6px;
     margin-bottom: 6px;
   }
-  
+
   .appointment-popup-address-text {
     font-size: 12px;
     line-height: 1.4;
   }
-  
+
   .user-popup-address {
     font-size: 12px;
     line-height: 1.4;
@@ -734,12 +734,12 @@
   .appointment-popup-address-container {
     padding: 5px 0 5px 9px;
   }
-  
+
   .appointment-popup-address-text {
     font-size: 12px;
     line-height: 1.4;
   }
-  
+
   .user-popup-address {
     font-size: 12px;
     line-height: 1.4;
@@ -751,7 +751,7 @@
     font-size: 13px;
     line-height: 1.4;
   }
-  
+
   .user-popup-address {
     font-size: 13px;
     line-height: 1.4;
@@ -763,7 +763,7 @@
     font-size: 13px;
     line-height: 1.4;
   }
-  
+
   .user-popup-address {
     font-size: 13px;
     line-height: 1.4;
@@ -775,7 +775,7 @@
     font-size: 14px;
     line-height: 1.4;
   }
-  
+
   .user-popup-address {
     font-size: 14px;
     line-height: 1.4;
@@ -786,12 +786,12 @@
   .appointment-popup-address-container {
     padding: 7px 0 7px 12px;
   }
-  
+
   .appointment-popup-address-text {
     font-size: 15px;
     line-height: 1.4;
   }
-  
+
   .user-popup-address {
     font-size: 15px;
     line-height: 1.4;
@@ -803,6 +803,35 @@
     border-left-width: 4px;
   }
 }
+
+/* Route Information Styles */
+.route-info-container {
+  background: linear-gradient(135deg, #2272B9 0%, #1a5a8f 100%);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(34, 114, 185, 0.2);
+}
+
+.route-info-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+}
+
+.route-info-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-info-from {
+  font-size: 11px;
+  margin-top: 6px;
+  opacity: 0.9;
+}
+
 
 .user-location-ring {
   width: 22px;
@@ -899,13 +928,23 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes slideUp {
@@ -913,6 +952,7 @@
     transform: translate(-50%, calc(-50% + 30px));
     opacity: 0;
   }
+
   to {
     transform: translate(-50%, -50%);
     opacity: 1;
@@ -924,6 +964,7 @@
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
@@ -931,8 +972,15 @@
 }
 
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes slideInDown {
@@ -940,6 +988,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -947,8 +996,15 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 0.85; }
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 0.85;
+  }
 }
 
 .atlas-popup {
@@ -1193,6 +1249,7 @@
 }
 
 @-moz-document url-prefix() {
+
   .pcf-loading-spinner,
   .loading-spinner {
     transform: translateZ(0);
@@ -1200,10 +1257,13 @@
 }
 
 .appointment-popup-directions-btn {
-  width: auto; /* Changed from 100% */
-  flex: 1; /* Added to share space equally */
+  width: auto;
+  /* Changed from 100% */
+  flex: 1;
+  /* Added to share space equally */
   padding: clamp(10px, 2vw, 12px) clamp(14px, 2.5vw, 18px);
-  margin-top: 0; /* Remove individual margin since container has margin-top */
+  margin-top: 0;
+  /* Remove individual margin since container has margin-top */
   font-size: clamp(12px, 2vw, 14px);
   font-weight: 400;
   background: #ffffff;
@@ -1214,7 +1274,8 @@
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
-  justify-content: center; /* Changed from flex-start to center */
+  justify-content: center;
+  /* Changed from flex-start to center */
   gap: clamp(8px, 1.5vw, 10px);
   white-space: nowrap;
   box-sizing: border-box;
@@ -1289,8 +1350,10 @@
 }
 
 .appointment-popup-close-btn {
-  width: auto; /* Changed from 100% */
-  flex: 1; /* Added to share space equally */
+  width: auto;
+  /* Changed from 100% */
+  flex: 1;
+  /* Added to share space equally */
   padding: 10px 16px;
   background: white;
   color: #323130;
@@ -1717,7 +1780,7 @@
   .appointment-popup-container {
     max-width: 95vw;
   }
-  
+
   .selected-date-badge {
     position: static;
     margin-top: 8px;
@@ -1749,13 +1812,14 @@
   }
 
   @keyframes slideUpMobile {
-    from { 
-      transform: translateY(100%); 
-      opacity: 0; 
+    from {
+      transform: translateY(100%);
+      opacity: 0;
     }
-    to { 
-      transform: translateY(0); 
-      opacity: 1; 
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
     }
   }
 
@@ -1831,7 +1895,7 @@
     padding: 10px 14px;
     margin-top: 10px;
   }
-  
+
   .appointment-popup-directions-icon {
     font-size: 15px;
   }
@@ -2860,7 +2924,8 @@
   }
 }
 
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
   .filter-controls-bar {
     border-width: 0.5px;
   }
@@ -2872,6 +2937,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -2907,6 +2973,7 @@
 }
 
 @media (prefers-contrast: high) {
+
   .pcf-loading-content,
   .pcf-error-content,
   .filter-controls-bar {
@@ -3013,6 +3080,7 @@
 }
 
 @media print {
+
   .filter-controls-wrapper,
   .pcf-loading-container,
   .pcf-error-container,

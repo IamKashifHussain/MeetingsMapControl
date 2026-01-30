@@ -28,9 +28,13 @@ interface RouteApiLegPoint {
   latitude: number;
 }
 
-interface RouteApiLeg {
+interface RouteApiLegSummary {
   lengthInMeters: number;
   travelTimeInSeconds: number;
+}
+
+interface RouteApiLeg {
+  summary: RouteApiLegSummary;
   points: RouteApiLegPoint[];
 }
 
@@ -91,10 +95,10 @@ export class AzureMapsRouteService {
       }
 
       const result = this.buildRouteResult(startPosition, sortedPoints, routeData);
-      
+
       this.cache.set(cacheKey, { result, timestamp: Date.now() });
       this.apiCallCount++;
-      
+
       return result;
     } catch (error) {
       return null;
@@ -118,13 +122,13 @@ export class AzureMapsRouteService {
 
   private extractRouteCoordinates(legs: RouteApiLeg[]): atlas.data.Position[] {
     const coords: atlas.data.Position[] = [];
-    
+
     for (const leg of legs) {
       for (const point of leg.points) {
         coords.push([point.longitude, point.latitude]);
       }
     }
-    
+
     return coords;
   }
 
@@ -146,7 +150,9 @@ export class AzureMapsRouteService {
       throw new Error(`Route API failed: ${response.statusText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    return data;
   }
 
   private buildRouteLegDetails(
@@ -157,16 +163,17 @@ export class AzureMapsRouteService {
 
     if (legs.length > 0) {
       const firstPoint = sortedPoints[0];
-      legDetails.push({
+      const firstLeg = {
         from: "Your Location",
         to: firstPoint.subject || firstPoint.address || "First Appointment",
-        distance: legs[0].lengthInMeters,
-        duration: legs[0].travelTimeInSeconds,
+        distance: legs[0].summary.lengthInMeters,
+        duration: legs[0].summary.travelTimeInSeconds,
         summary: AzureMapsRouteService.formatRouteSummary(
-          legs[0].lengthInMeters,
-          legs[0].travelTimeInSeconds
+          legs[0].summary.lengthInMeters,
+          legs[0].summary.travelTimeInSeconds
         ),
-      });
+      };
+      legDetails.push(firstLeg);
     }
 
     for (let i = 1; i < legs.length; i++) {
@@ -174,16 +181,18 @@ export class AzureMapsRouteService {
       const fromPoint = sortedPoints[i - 1];
       const toPoint = sortedPoints[i];
 
-      legDetails.push({
+      const routeLeg = {
         from: fromPoint.subject || fromPoint.address || `Stop ${i}`,
         to: toPoint.subject || toPoint.address || `Stop ${i + 1}`,
-        distance: leg.lengthInMeters,
-        duration: leg.travelTimeInSeconds,
+        distance: leg.summary.lengthInMeters,
+        duration: leg.summary.travelTimeInSeconds,
         summary: AzureMapsRouteService.formatRouteSummary(
-          leg.lengthInMeters,
-          leg.travelTimeInSeconds
+          leg.summary.lengthInMeters,
+          leg.summary.travelTimeInSeconds
         ),
-      });
+      };
+
+      legDetails.push(routeLeg);
     }
 
     return legDetails;
